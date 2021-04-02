@@ -1,0 +1,12 @@
+# Ignore Mac System files
+.DS_store
+
+# Ignore all text files
+*.txt
+
+# Debug files
+*.dSYM/
+
+# JSON files
+*.json
+
