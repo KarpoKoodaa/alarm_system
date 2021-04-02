@@ -10,3 +10,6 @@
 # JSON files
 *.json
 
+# build files
+*.o
+MEGA2560/lib/Keypad/keypad.o
