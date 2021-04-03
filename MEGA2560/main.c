@@ -9,18 +9,56 @@
 
 #include <avr/io.h>
 #include <util/delay.h>
+#include <string.h>
+#include <stdbool.h>
 #include "lib/LCD/lcd.h"
 #include "lib/Keypad/keypad.h"
 
+char g_c_pin[5] = "1234";
+bool g_b_alarm_active = false;
 
+bool
+check_pin(void)
+{
+    char entered_pin[5]={0};
+    uint8_t counter = 0;
+    char key;
+    bool pin_correct;
 
+    lcd_clrscr();
+    lcd_puts("Enter a PIN code");
+    lcd_gotoxy(0,1);
+
+    while (counter < 4)
+    {
+        key = KEYPAD_GetKey();
+        if(key != 0xFF)
+        {
+
+            entered_pin[counter] = key;
+            lcd_putc(entered_pin[counter]);
+            counter++;
+        }
+    }
+
+    if(strcmp(g_c_pin,entered_pin) == 0)
+    {
+        pin_correct = true;
+    }
+    else pin_correct = false;
+    _delay_ms(1000);
+
+    return pin_correct;
+    
+}
 
 
 
 int
 main (void)
 {
-    uint8_t key;
+    bool pin_status;
+
     KEYPAD_Init();
     
     lcd_init(LCD_DISP_ON);
@@ -34,8 +72,16 @@ main (void)
     while (1)
     {
         /* code */
-        key = KEYPAD_GetKey();
-        lcd_putc(key);
+        pin_status = check_pin();
+        lcd_clrscr();
+        lcd_puts("Entered PIN:");
+        lcd_gotoxy(0,1);
+        if(pin_status)
+        {
+            lcd_puts("PIN CORRECT");
+        }
+        else lcd_puts("PIN INCORRECT");
+        _delay_ms(5000);
     }
     
 }

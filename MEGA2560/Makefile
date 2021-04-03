@@ -1,6 +1,6 @@
 FILENAME = main
-FILENAME2 = ./lib/LCD/lcd
-FILENAME3 = ./lib/Keypad/keypad
+FILENAME2 = ./lib/Keypad/keypad
+FILENAME3 = ./lib/LCD/lcd
 PORT = /dev/tty.usbmodem142201
 DEVICE = atmega2560
 PROGRAMMER = wiring
@@ -26,3 +26,5 @@ clean:
 	rm $(FILENAME).o
 	rm $(FILENAME).elf
 	rm $(FILENAME).hex
+	rm $(FILENAME2).o
+	rm $(FILENAME3).o
