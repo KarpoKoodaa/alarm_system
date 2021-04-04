@@ -29,15 +29,31 @@ check_pin(void)
     lcd_puts("Enter a PIN code");
     lcd_gotoxy(0,1);
 
-    while (counter < 4)
+    while (counter < 4 && counter > -1)
     {
         key = KEYPAD_GetKey();
-        if(key != 0xFF)
+        if(key != 'B')
         {
 
             entered_pin[counter] = key;
             lcd_putc(entered_pin[counter]);
             counter++;
+        }
+        else if (key == 'B')
+        {
+           if(counter > 0)
+           {
+                counter--;
+                entered_pin[counter] = " ";
+                lcd_gotoxy(counter,1); 
+                lcd_putc(entered_pin[counter]);
+                lcd_gotoxy(counter,1); 
+           }
+           else if (counter == 0)
+           {
+               lcd_gotoxy(counter,1);
+               counter = 0;
+           }
         }
     }
 
