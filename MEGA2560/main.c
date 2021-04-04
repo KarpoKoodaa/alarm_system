@@ -78,7 +78,36 @@ check_pin(void)
     return pin_correct;
     
 }
+bool
+show_menu()
+{
+    char menu_choice = 0;
+    lcd_clrscr();
+    lcd_puts("MENU");
+    _delay_ms(1500);
+    lcd_clrscr();
+    lcd_puts("1.Activate Alarm\n");
+    lcd_puts("2.Change PIN");
+    menu_choice = KEYPAD_GetKey();
+    
+    switch (menu_choice)
+    {
+    case '1':
+        return check_pin();
+        
+        break;
+    case '2':
+        lcd_clrscr();
+        lcd_puts("Changing PIN\ncode");
+        _delay_ms(2000);
+        break;
+    default:
+        show_menu();
+        break;
+    }
 
+    _delay_ms(5000);
+}
 
 
 int
@@ -99,7 +128,12 @@ main (void)
     while (1)
     {
         /* code */
-        pin_status = check_pin();
+        lcd_clrscr();
+        lcd_puts("Press a button");
+        while (!KEYPAD_GetKey());
+        //show_menu();
+
+        pin_status = show_menu();
         lcd_clrscr();
         lcd_puts("Entered PIN:");
         lcd_gotoxy(0,1);
