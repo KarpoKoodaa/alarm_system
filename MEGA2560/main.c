@@ -32,16 +32,24 @@ check_pin(void)
     while (counter < 4 && counter > -1)
     {
         key = KEYPAD_GetKey();
-        if(key != 'B')
+        switch (key)
         {
-
+        case '1': 
+        case '2':
+        case '3':
+        case '4':
+        case '5': 
+        case '6':
+        case '7':
+        case '8':
+        case '9':
+        case '0':
             entered_pin[counter] = key;
             lcd_putc(entered_pin[counter]);
-            counter++;
-        }
-        else if (key == 'B')
-        {
-           if(counter > 0)
+            counter++; 
+            break;
+       case 'B':
+            if(counter > 0)
            {
                 counter--;
                 entered_pin[counter] = " ";
@@ -54,7 +62,10 @@ check_pin(void)
                lcd_gotoxy(counter,1);
                counter = 0;
            }
+        default:
+            break;
         }
+        
     }
 
     if(strcmp(g_c_pin,entered_pin) == 0)
@@ -81,7 +92,7 @@ main (void)
     lcd_clrscr();
 
     lcd_puts("Alarm System\n");
-    lcd_puts("ACTIVATED");
+    lcd_puts("DEACTIVATED");
     _delay_ms(2000);
     lcd_clrscr();
 
