@@ -5,12 +5,15 @@
  * Author : Kariantti 
  */ 
 
-#define F_CPU 16000000UL //Clock 16MHz
+#define F_CPU 16000000UL // Clock 16MHz
+#define BAUD 9600 // BAUD speed for UART
 
 #include <avr/io.h>
 #include <util/delay.h>
 #include <stdbool.h>
 #include <avr/interrupt.h>
+#include <stdio.h>
+#include <util/setbaud.h>
 
 bool g_b_alarm_active = true;
 
