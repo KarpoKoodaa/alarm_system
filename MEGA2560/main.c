@@ -165,21 +165,23 @@ transmit_byte(uint8_t data)
     while(!(SPSR & (1 << SPIF)));
 }
 
-uint8_t
+void
 SPI_master_tx_rx(uint8_t data)
 {
 
-    // Trasmit Dummy data to enable clock
-    transmit_byte(255);
+    uint8_t received_data = 0;
+    // Set SS Low
+    PORTB &= ~(1 << PB0);
 
     // Load transmit data into register
     SPDR = data;
 
     // Wait until transmission to complete
     while(!(SPSR & (1 << SPIF)));
+    received_data = SPDR;
 
-    // Return received data
-    return SPDR;
+    // Set SS High
+    PORTB |= (1 << PB0);
 }
 
 int
@@ -189,6 +191,7 @@ main (void)
 
     KEYPAD_Init();
     uart_init();
+    SPI_init();
 
     lcd_init(LCD_DISP_ON);
     lcd_clrscr();
@@ -213,6 +216,12 @@ main (void)
         if(pin_status)
         {
             lcd_puts("PIN CORRECT");
+            if(!g_b_alarm_active)
+            {
+                SPI_master_tx_rx(1);
+                
+            }
+            else SPI_master_tx_rx(2);
             g_b_alarm_active = !g_b_alarm_active;
         }
         else lcd_puts("PIN INCORRECT");

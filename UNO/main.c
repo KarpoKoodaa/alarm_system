@@ -15,7 +15,7 @@
 #include <stdio.h>
 #include <util/setbaud.h>
 
-bool g_b_alarm_active = true;
+bool g_b_alarm_active = false;
 int g_fail_counter = 0;
 
 void uart_putchar(char c, FILE *stream);
@@ -75,14 +75,19 @@ ISR
     if (received_data == 1)
     {
         g_b_alarm_active = true;
+        printf("Alarm activated, %d\n", g_b_alarm_active);
+        SPI_slave_tx_rx(1);
     }
     else if (received_data == 2)
     {
         g_b_alarm_active = false;
+        printf("Alarm deactivated, %d\n", g_b_alarm_active);
+        SPI_slave_tx_rx(1);
     }
     else if ((received_data == 3) || (received_data == 255))
     {
         SPI_slave_tx_rx(1);
+        
     }
     else
     {
