@@ -14,6 +14,15 @@
 
 bool g_b_alarm_active = true;
 
+void uart_putchar(char c, FILE *stream);
+char uart_getchar(FILE *stream);
+
+void uart_init();
+FILE uart_output = FDEV_SETUP_STREAM(uart_putchar, NULL, _FDEV_SETUP_WRITE);
+FILE uart_input = FDEV_SETUP_STREAM(NULL, uart_getchar, _FDEV_SETUP_READ);
+
+FILE uart_io = FDEV_SETUP_STREAM(uart_putchar, uart_getchar, _FDEV_SETUP_RW);
+
 void 
 set_timer_01(void)
 {
@@ -57,6 +66,9 @@ main (void)
 
     DDRB |= (1 << PB1);
 
+    uart_init();
+    SPI_init();
+
     set_timer_01();
     sei();
 
@@ -75,4 +87,39 @@ main (void)
         }
     }
     
+}
+
+
+// UART for Troubleshooting
+
+void
+uart_init()
+{
+    UBRR0H = UBRRH_VALUE;
+    UBRR0L = UBRRL_VALUE;
+
+    
+    UCSR0B = (1 << TXEN0) | (1 << RXEN0);
+
+    UCSR0C = (1 << UCSZ01) | (1 << UCSZ00);
+     
+    stdout = &uart_output;
+    stdin = &uart_input;
+}
+
+void
+uart_putchar(char c, FILE *stream)
+{
+    if(c == '\n'){
+        uart_putchar('\r', stream);
+    }
+    loop_until_bit_is_set(UCSR0A, UDRE0);
+    UDR0 = c;
+}
+
+char
+uart_getchar(FILE *stream)
+{
+    loop_until_bit_is_set(UCSR0A, RXC0);
+    return UDR0;
 }
