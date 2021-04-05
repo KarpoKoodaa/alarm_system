@@ -68,6 +68,7 @@ check_pin(void)
                lcd_gotoxy(counter,1);
                counter = 0;
            }
+           break;
         default:
             break;
         }
@@ -121,6 +122,48 @@ show_menu()
     _delay_ms(5000);
 }
 
+void
+SPI_init(void)
+{
+    // Set MOSI, SS and SCK ouput
+    DDRB |= (1 << PB2) | (1 << PB1) | (1 << PB0);
+
+    // Set MISO input
+    DDRB &= ~(1 << PB3);
+
+    // Set as Master and clock to fosc/128
+    SPCR = (1 << MSTR) | (1 << SPR1) | (1 << SPR0);
+
+    // Wait until all set
+    _delay_ms(10);
+    
+    // Enable SPI
+    SPCR |= (1 << SPE);
+
+}
+
+void
+transmit_byte(uint8_t data)
+{
+    // Load data into register
+    SPDR = data;
+
+    // Wait until transmission is complete
+    while(!(SPSR & (1 << SPDIF)));
+}
+
+uint8_t
+SPI_master_tx_rx(uint8_t data)
+{
+    // Load transmit data into register
+    SPDR = data;
+
+    // Wait until transmission to complete
+    while(!(SPRSR & (1 << SPIF)));
+
+    // Return received data
+    return SPDR;
+}
 
 int
 main (void)
