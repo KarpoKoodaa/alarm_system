@@ -71,7 +71,7 @@ check_pin(void)
             if(counter > 0)
            {
                 counter--;
-                entered_pin[counter] = " ";
+                entered_pin[counter] = 32;
                 lcd_gotoxy(counter,1); 
                 lcd_putc(entered_pin[counter]);
                 lcd_gotoxy(counter,1); 
