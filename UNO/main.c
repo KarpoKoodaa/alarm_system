@@ -12,6 +12,8 @@
 #include <stdbool.h>
 #include <avr/interrupt.h>
 
+bool g_b_alarm_active = true;
+
 void 
 set_timer_01(void)
 {
@@ -24,7 +26,10 @@ set_timer_01(void)
 void 
 start_alarm_sound(void)
 {
-    TCCR1B |= (1 << CS10);
+    if(g_b_alarm_active)
+    {
+        TCCR1B |= (1 << CS10);
+    }
 }
 void
 stop_alarm_sound(void)
