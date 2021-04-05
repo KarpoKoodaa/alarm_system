@@ -61,7 +61,7 @@ SPI_init(void)
 }
 
 void
-SPI_slave_tx_rx(u_int8_t data)
+SPI_slave_tx_rx(uint8_t data)
 {
     // Add data to SPI register
     SPDR = data;
@@ -70,7 +70,7 @@ SPI_slave_tx_rx(u_int8_t data)
 ISR
 (SPI_STC_vect)
 {
-    u_int8_t received_data = SPDR;
+    uint8_t received_data = SPDR;
 
     if (received_data == 1)
     {
@@ -80,13 +80,13 @@ ISR
     {
         g_b_alarm_active = false;
     }
-    else if ((received_data == 3) || received_data == 255))
+    else if ((received_data == 3) || (received_data == 255))
     {
         SPI_slave_tx_rx(1);
     }
     else
     {
-        fail_counter++;
+        g_fail_counter++;
         printf("f: %d\n", received_data);
     }
    
