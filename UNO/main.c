@@ -37,6 +37,16 @@ stop_alarm_sound(void)
     TCCR1B &= ~(1 << CS10);
 }
 
+void
+SPI_init(void)
+{
+    // Set MISO output
+    DDRB |= (1 << PB4);
+
+    // Enable SPI and SPI interrupt
+    SPCR |= (1 << SPE) | (1 << SPIE);
+}
+
 int
 main (void)
 {
