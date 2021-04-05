@@ -5,17 +5,30 @@
  * Author : Kariantti 
  */ 
 
-#define F_CPU 16000000UL    //16MHz Clock
+#define F_CPU 16000000UL    // 16MHz Clock
+#define BAUD 9600           // BAUD speed for UART
 
 #include <avr/io.h>
 #include <util/delay.h>
 #include <string.h>
 #include <stdbool.h>
+#include <util/setbaud.h>
+#include <stdio.h>
+
 #include "lib/LCD/lcd.h"
 #include "lib/Keypad/keypad.h"
 
 char g_c_pin[5] = "1234";
 bool g_b_alarm_active = false;
+
+void uart_putchar(char c, FILE *stream);
+char uart_getchar(FILE *stream);
+
+void uart_init();
+FILE uart_output = FDEV_SETUP_STREAM(uart_putchar, NULL, _FDEV_SETUP_WRITE);
+FILE uart_input = FDEV_SETUP_STREAM(NULL, uart_getchar, _FDEV_SETUP_READ);
+
+FILE uart_io = FDEV_SETUP_STREAM(uart_putchar, uart_getchar, _FDEV_SETUP_RW);
 
 bool
 check_pin(void)
@@ -149,7 +162,7 @@ transmit_byte(uint8_t data)
     SPDR = data;
 
     // Wait until transmission is complete
-    while(!(SPSR & (1 << SPDIF)));
+    while(!(SPSR & (1 << SPIF)));
 }
 
 uint8_t
@@ -163,7 +176,7 @@ SPI_master_tx_rx(uint8_t data)
     SPDR = data;
 
     // Wait until transmission to complete
-    while(!(SPRSR & (1 << SPIF)));
+    while(!(SPSR & (1 << SPIF)));
 
     // Return received data
     return SPDR;
