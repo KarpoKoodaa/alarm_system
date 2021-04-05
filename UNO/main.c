@@ -16,6 +16,7 @@
 #include <util/setbaud.h>
 
 bool g_b_alarm_active = true;
+int g_fail_counter = 0;
 
 void uart_putchar(char c, FILE *stream);
 char uart_getchar(FILE *stream);
@@ -59,6 +60,37 @@ SPI_init(void)
     SPCR |= (1 << SPE) | (1 << SPIE);
 }
 
+void
+SPI_slave_tx_rx(u_int8_t data)
+{
+    // Add data to SPI register
+    SPDR = data;
+}
+
+ISR
+(SPI_STC_vect)
+{
+    u_int8_t received_data = SPDR;
+
+    if (received_data == 1)
+    {
+        g_b_alarm_active = true;
+    }
+    else if (received_data == 2)
+    {
+        g_b_alarm_active = false;
+    }
+    else if ((received_data == 3) || received_data == 255))
+    {
+        SPI_slave_tx_rx(1);
+    }
+    else
+    {
+        fail_counter++;
+        printf("f: %d\n", received_data);
+    }
+   
+}
 int
 main (void)
 {
