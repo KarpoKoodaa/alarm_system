@@ -1,6 +1,6 @@
 /*
  * main.c
- *
+ * Master
  * Created: 02.04.2021
  * Author : Kariantti 
  */ 
