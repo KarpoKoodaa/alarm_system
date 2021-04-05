@@ -155,6 +155,10 @@ transmit_byte(uint8_t data)
 uint8_t
 SPI_master_tx_rx(uint8_t data)
 {
+
+    // Trasmit Dummy data to enable clock
+    transmit_byte(255);
+
     // Load transmit data into register
     SPDR = data;
 
@@ -171,7 +175,8 @@ main (void)
     bool pin_status;
 
     KEYPAD_Init();
-    
+    uart_init();
+
     lcd_init(LCD_DISP_ON);
     lcd_clrscr();
 
@@ -201,4 +206,39 @@ main (void)
         _delay_ms(5000);
     }
     
+}
+
+
+// UART FOR TROUBLESHOOTING
+
+void
+uart_init()
+{
+    UBRR0H = UBRRH_VALUE;
+    UBRR0L = UBRRL_VALUE;
+
+    
+    UCSR0B = (1 << TXEN0) | (1 << RXEN0);
+
+    UCSR0C = (1 << UCSZ01) | (1 << UCSZ00);
+     
+    stdout = &uart_output;
+    stdin = &uart_input;
+}
+
+void
+uart_putchar(char c, FILE *stream)
+{
+    if(c == '\n'){
+        uart_putchar('\r', stream);
+    }
+    loop_until_bit_is_set(UCSR0A, UDRE0);
+    UDR0 = c;
+}
+
+char
+uart_getchar(FILE *stream)
+{
+    loop_until_bit_is_set(UCSR0A, RXC0);
+    return UDR0;
 }
