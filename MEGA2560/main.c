@@ -115,10 +115,103 @@ check_pin(void)
     return pin_correct;
 }
 
+void
+get_pin_code(char * entered_pin_code)
+{
+    uint8_t counter = 0;
+    //lcd_clrscr();
+
+   while (counter < 4)
+    {
+        char key = KEYPAD_GetKey();
+        switch (key)
+        {
+            case '1': 
+            case '2':
+            case '3':
+            case '4':
+            case '5': 
+            case '6':
+            case '7':
+            case '8':
+            case '9':
+            case '0':
+                entered_pin_code[counter] = key;
+                lcd_putc(entered_pin_code[counter]);
+                counter++; 
+                _delay_ms(200);
+            break;
+
+            case 'B':
+              // Erases a digit 
+            
+                if (counter != 0)
+                {
+                    --counter;
+                    entered_pin_code[counter] = 32; // Enter empty char
+                    lcd_gotoxy(counter, 1); 
+                    lcd_putc(entered_pin_code[counter]);
+                    lcd_gotoxy(counter, 1);
+                    _delay_ms(200); 
+                }
+                else if (counter == 0)
+                {
+                   // Blocks that no negative numbers on counter
+
+                   lcd_gotoxy(counter, 1);
+                   //counter = 0;
+                   _delay_ms(200);
+                }
+                break;
+    
+            default:
+                break;
+        }
+    }
+}
+
 bool
 change_pin_code()
 {
+    char entered_pin_code[5] = {0, 0, 0, 0, 0};
+
+    lcd_clrscr();
+    lcd_puts("Enter PIN Code:\n");
+    get_pin_code(entered_pin_code);
+
+    bool pin_correct = false;
     
+    if (strcmp(g_c_pin,entered_pin_code) == 0)
+    {
+        pin_correct = true;
+        char new_pin_code_1[5] = {0, 0, 0, 0, 0};
+
+        lcd_clrscr();
+        lcd_puts("Enter new PIN:\n");
+
+        get_pin_code(new_pin_code_1);
+        _delay_ms(200);
+
+        char new_pin_code_2[5] = {0, 0, 0, 0, 0};
+
+        lcd_clrscr();
+        lcd_puts("Enter PIN again:\n");
+        get_pin_code(new_pin_code_2);
+
+        if(strcmp(new_pin_code_1, new_pin_code_2) == 0)
+        {
+            strcpy(g_c_pin,new_pin_code_2);
+            lcd_clrscr();
+            lcd_puts("PIN CHANGED\n");
+            _delay_ms(2000);
+        }
+    }
+    else
+    {
+        pin_correct = false;
+    } 
+
+    return pin_correct;
 }
 
 bool
@@ -152,11 +245,12 @@ show_menu()
         
                 break;
             case '2':
-                // _delay_ms(200);
+                _delay_ms(200);
                 // return change_pin_code();
                  lcd_clrscr();
                 lcd_puts("Changing PIN\ncode");
-                _delay_ms(2000);
+                return change_pin_code();
+                //_delay_ms(1000);
                 break;
             default:
                 //show_menu();
