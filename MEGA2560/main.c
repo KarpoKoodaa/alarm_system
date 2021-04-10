@@ -7,6 +7,8 @@
 
 #define F_CPU 16000000UL    // 16MHz Clock
 #define BAUD 9600           // BAUD speed for UART
+#define ACTIVATE 1          // Activate alarm
+#define DEACTIVATE 2        // Deactivate alarm 
 
 #include <avr/io.h>
 #include <util/delay.h>
@@ -218,10 +220,10 @@ main (void)
             lcd_puts("PIN CORRECT");
             if(!g_b_alarm_active)
             {
-                SPI_master_tx_rx(1);
+                SPI_master_tx_rx(ACTIVATE);
                 
             }
-            else SPI_master_tx_rx(2);
+            else SPI_master_tx_rx(DEACTIVATE);
             g_b_alarm_active = !g_b_alarm_active;
         }
         else lcd_puts("PIN INCORRECT");

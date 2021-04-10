@@ -5,8 +5,11 @@
  * Author : Kariantti 
  */ 
 
-#define F_CPU 16000000UL // Clock 16MHz
-#define BAUD 9600 // BAUD speed for UART
+#define F_CPU 16000000UL    // Clock 16MHz
+#define BAUD 9600           // BAUD speed for UART
+#define ACTIVATE 1          // Activate Alarm
+#define DEACTIVATE 2        // Deactivate
+#define ACK 1                // ACK
 
 #include <avr/io.h>
 #include <util/delay.h>
@@ -72,21 +75,21 @@ ISR
 {
     uint8_t received_data = SPDR;
 
-    if (received_data == 1)
+    if (received_data == ACTIVATE)
     {
         g_b_alarm_active = true;
         printf("Alarm activated, %d\n", g_b_alarm_active);
-        SPI_slave_tx_rx(1);
+        SPI_slave_tx_rx(ACK);
     }
-    else if (received_data == 2)
+    else if (received_data == DEACTIVATE)
     {
         g_b_alarm_active = false;
         printf("Alarm deactivated, %d\n", g_b_alarm_active);
-        SPI_slave_tx_rx(1);
+        SPI_slave_tx_rx(ACK);
     }
     else if ((received_data == 3) || (received_data == 255))
     {
-        SPI_slave_tx_rx(1);
+        SPI_slave_tx_rx(ACK);
         
     }
     else
