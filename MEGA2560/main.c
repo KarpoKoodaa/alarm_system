@@ -16,12 +16,14 @@
 #include <stdbool.h>
 #include <util/setbaud.h>
 #include <stdio.h>
+#include <avr/interrupt.h>
 
 #include "lib/LCD/lcd.h"
 #include "lib/Keypad/keypad.h"
 
 char g_c_pin[5] = "1234";
 bool g_b_alarm_active = false;
+uint8_t g_i_timeout = 0;
 
 void uart_putchar(char c, FILE *stream);
 char uart_getchar(FILE *stream);
@@ -184,6 +186,32 @@ SPI_master_tx_rx(uint8_t data)
 
     // Set SS High
     PORTB |= (1 << PB0);
+}
+
+void
+init_timeout(void)
+{
+    // Normal mode
+    TCCR1A = 0;
+
+    // Start timer with 1024 prescaler
+    TCCR1B = (1 << CS12) | (1 << CS10);
+
+    // Enable interrupts
+    sei();
+
+    return;
+}
+
+ISR
+(TIMER1_OVF_vect)
+{
+    if(g_i_timeout == 2)
+    {
+        lcd_clrscr();
+        lcd_puts("Timeout!");
+
+    }
 }
 
 int
