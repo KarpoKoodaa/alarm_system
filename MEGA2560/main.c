@@ -21,7 +21,7 @@
 #include "lib/LCD/lcd.h"
 #include "lib/Keypad/keypad.h"
 
-char g_c_pin[5] = "1234";
+char g_c_pin[5] = "1234\0";
 bool g_b_alarm_active = false;
 uint8_t g_i_timeout = 0;
 
@@ -37,10 +37,8 @@ FILE uart_io = FDEV_SETUP_STREAM(uart_putchar, uart_getchar, _FDEV_SETUP_RW);
 bool
 check_pin(void)
 {
-    char entered_pin[5]={0};
+    char entered_pin[5] = {0, 0, 0, 0, 0};
     uint8_t counter = 0;
-    char key;
-    bool pin_correct;
 
     if(g_b_alarm_active)
     {
@@ -53,62 +51,74 @@ check_pin(void)
     lcd_gotoxy(0,1);
     _delay_ms(1000);
 
-    while (counter < 4 && counter > -1)
+    while (counter < 4)
     {
-        key = KEYPAD_GetKey();
+        char key = KEYPAD_GetKey();
         switch (key)
         {
-        case '1': 
-        case '2':
-        case '3':
-        case '4':
-        case '5': 
-        case '6':
-        case '7':
-        case '8':
-        case '9':
-        case '0':
-            entered_pin[counter] = key;
-            lcd_putc(entered_pin[counter]);
-            counter++; 
-            _delay_ms(200);
-            break;
-       case 'B':
-            if(counter > 0)
-           {
-                counter--;
-                entered_pin[counter] = 32;
-                lcd_gotoxy(counter,1); 
+            case '1': 
+            case '2':
+            case '3':
+            case '4':
+            case '5': 
+            case '6':
+            case '7':
+            case '8':
+            case '9':
+            case '0':
+                entered_pin[counter] = key;
                 lcd_putc(entered_pin[counter]);
-                lcd_gotoxy(counter,1);
-                _delay_ms(200); 
-           }
-           else if (counter == 0)
-           {
-               lcd_gotoxy(counter,1);
-               counter = 0;
-               _delay_ms(200);
-           }
-           break;
-        default:
+                counter++; 
+                _delay_ms(200);
             break;
+
+            case 'B':
+              // Erases a digit 
+            
+                if(counter != 0)
+                {
+                    counter--;
+                    entered_pin[counter] = 32; // Enter empty char
+                    lcd_gotoxy(counter, 1); 
+                    lcd_putc(entered_pin[counter]);
+                    lcd_gotoxy(counter, 1);
+                    _delay_ms(200); 
+                }
+                else if (counter == 0)
+                {
+                   // Blocks that no negative numbers on counter
+
+                   lcd_gotoxy(counter, 1);
+                   //counter = 0;
+                   _delay_ms(200);
+                }
+                break;
+    
+            default:
+                break;
         }
         
     }
 
-    if(strcmp(g_c_pin,entered_pin) == 0)
+    bool pin_correct = false;
+    
+    if (strcmp(g_c_pin,entered_pin) == 0)
     {
         pin_correct = true;
     }
-    else pin_correct = false;
+    else
+    {
+        pin_correct = false;
+    } 
     _delay_ms(1000);
 
     return pin_correct;
-    
 }
+
 bool
 show_menu()
 {
+    
     char menu_choice = 0;
     lcd_clrscr();
     lcd_puts("MENU");
@@ -119,9 +129,11 @@ show_menu()
         return check_pin();
     }
     else
-    lcd_puts("1.Activate\n");
+    {
+        lcd_puts("1.Activate\n");
+        lcd_puts("2.Change PIN");
+    }
     
-    lcd_puts("2.Change PIN");
     do
     {
         menu_choice = KEYPAD_GetKey();
@@ -141,7 +153,7 @@ show_menu()
                 //show_menu();
                 break;
         }
-    }while(menu_choice == 'z');
+    } while(menu_choice == 'z');
 
     _delay_ms(5000);
 }
@@ -224,7 +236,6 @@ ISR
 int
 main (void)
 {
-    bool pin_status;
 
     KEYPAD_Init();
     uart_init();
@@ -240,6 +251,7 @@ main (void)
 
     while (1)
     {
+        bool pin_status = false;
         /* code */
         lcd_clrscr();
         // lcd_puts("Press a button");
@@ -249,7 +261,7 @@ main (void)
         pin_status = show_menu();
         lcd_clrscr();
         lcd_puts("Entered PIN:");
-        lcd_gotoxy(0,1);
+        lcd_gotoxy(0, 1);
         if(pin_status)
         {
             lcd_puts("PIN CORRECT");
@@ -258,6 +270,7 @@ main (void)
                 SPI_master_tx_rx(ACTIVATE);
                 
             }
+
             else SPI_master_tx_rx(DEACTIVATE);
             g_b_alarm_active = !g_b_alarm_active;
         }
