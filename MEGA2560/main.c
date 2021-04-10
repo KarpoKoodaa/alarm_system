@@ -75,9 +75,9 @@ check_pin(void)
             case 'B':
               // Erases a digit 
             
-                if(counter != 0)
+                if (counter != 0)
                 {
-                    counter--;
+                    --counter;
                     entered_pin[counter] = 32; // Enter empty char
                     lcd_gotoxy(counter, 1); 
                     lcd_putc(entered_pin[counter]);
@@ -116,10 +116,15 @@ check_pin(void)
 }
 
 bool
+change_pin_code()
+{
+    
+}
+
+bool
 show_menu()
 {
     
-    char menu_choice = 0;
     lcd_clrscr();
     lcd_puts("MENU");
     _delay_ms(1500);
@@ -134,6 +139,8 @@ show_menu()
         lcd_puts("2.Change PIN");
     }
     
+    char menu_choice = 0;
+    
     do
     {
         menu_choice = KEYPAD_GetKey();
@@ -145,7 +152,9 @@ show_menu()
         
                 break;
             case '2':
-                lcd_clrscr();
+                // _delay_ms(200);
+                // return change_pin_code();
+                 lcd_clrscr();
                 lcd_puts("Changing PIN\ncode");
                 _delay_ms(2000);
                 break;
@@ -236,7 +245,6 @@ ISR
 int
 main (void)
 {
-
     KEYPAD_Init();
     uart_init();
     SPI_init();
@@ -270,14 +278,12 @@ main (void)
                 SPI_master_tx_rx(ACTIVATE);
                 
             }
-
             else SPI_master_tx_rx(DEACTIVATE);
             g_b_alarm_active = !g_b_alarm_active;
         }
         else lcd_puts("PIN INCORRECT");
         _delay_ms(5000);
     }
-    
 }
 
 
@@ -301,7 +307,8 @@ uart_init()
 void
 uart_putchar(char c, FILE *stream)
 {
-    if(c == '\n'){
+    if(c == '\n')
+    {
         uart_putchar('\r', stream);
     }
     loop_until_bit_is_set(UCSR0A, UDRE0);
