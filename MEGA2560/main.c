@@ -51,6 +51,7 @@ check_pin(void)
     lcd_clrscr();
     lcd_puts("Enter a PIN code");
     lcd_gotoxy(0,1);
+    _delay_ms(1000);
 
     while (counter < 4 && counter > -1)
     {
@@ -70,6 +71,7 @@ check_pin(void)
             entered_pin[counter] = key;
             lcd_putc(entered_pin[counter]);
             counter++; 
+            _delay_ms(200);
             break;
        case 'B':
             if(counter > 0)
@@ -78,12 +80,14 @@ check_pin(void)
                 entered_pin[counter] = 32;
                 lcd_gotoxy(counter,1); 
                 lcd_putc(entered_pin[counter]);
-                lcd_gotoxy(counter,1); 
+                lcd_gotoxy(counter,1);
+                _delay_ms(200); 
            }
            else if (counter == 0)
            {
                lcd_gotoxy(counter,1);
                counter = 0;
+               _delay_ms(200);
            }
            break;
         default:
@@ -118,23 +122,26 @@ show_menu()
     lcd_puts("1.Activate\n");
     
     lcd_puts("2.Change PIN");
-    menu_choice = KEYPAD_GetKey();
-    
-    switch (menu_choice)
+    do
     {
-    case '1':
-        return check_pin();
+        menu_choice = KEYPAD_GetKey();
+    
+        switch (menu_choice)
+        {
+            case '1':
+                return check_pin();
         
-        break;
-    case '2':
-        lcd_clrscr();
-        lcd_puts("Changing PIN\ncode");
-        _delay_ms(2000);
-        break;
-    default:
-        show_menu();
-        break;
-    }
+                break;
+            case '2':
+                lcd_clrscr();
+                lcd_puts("Changing PIN\ncode");
+                _delay_ms(2000);
+                break;
+            default:
+                //show_menu();
+                break;
+        }
+    }while(menu_choice == 'z');
 
     _delay_ms(5000);
 }
@@ -235,8 +242,8 @@ main (void)
     {
         /* code */
         lcd_clrscr();
-        lcd_puts("Press a button");
-        while (!KEYPAD_GetKey());
+        // lcd_puts("Press a button");
+        // while (!KEYPAD_GetKey());
         //show_menu();
 
         pin_status = show_menu();
