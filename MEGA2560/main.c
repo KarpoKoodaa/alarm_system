@@ -51,54 +51,7 @@ check_pin(void)
     lcd_gotoxy(0,1);
     _delay_ms(1000);
 
-    while (counter < 4)
-    {
-        char key = KEYPAD_GetKey();
-        switch (key)
-        {
-            case '1': 
-            case '2':
-            case '3':
-            case '4':
-            case '5': 
-            case '6':
-            case '7':
-            case '8':
-            case '9':
-            case '0':
-                entered_pin[counter] = key;
-                lcd_putc(entered_pin[counter]);
-                counter++; 
-                _delay_ms(200);
-            break;
-
-            case 'B':
-              // Erases a digit 
-            
-                if (counter != 0)
-                {
-                    --counter;
-                    entered_pin[counter] = 32; // Enter empty char
-                    lcd_gotoxy(counter, 1); 
-                    lcd_putc(entered_pin[counter]);
-                    lcd_gotoxy(counter, 1);
-                    _delay_ms(200); 
-                }
-                else if (counter == 0)
-                {
-                   // Blocks that no negative numbers on counter
-
-                   lcd_gotoxy(counter, 1);
-                   //counter = 0;
-                   _delay_ms(200);
-                }
-                break;
-    
-            default:
-                break;
-        }
-        
-    }
+    get_pin_code(entered_pin);
 
     bool pin_correct = false;
     
