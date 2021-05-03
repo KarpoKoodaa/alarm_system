@@ -43,18 +43,22 @@ check_pin(void)
     char entered_pin[5] = {0, 0, 0, 0, 0};
     uint8_t counter = 0;
 
+    init_timeout_counter();
+    
     if(g_b_alarm_active)
     {
         lcd_clrscr();
         lcd_puts("Alarm Active");
         _delay_ms(1000);
+        disable_timer_counter();
     }
     lcd_clrscr();
     lcd_puts("Enter a PIN code");
     lcd_gotoxy(0,1);
-    _delay_ms(1000);
+    _delay_ms(500);
 
     get_pin_code(entered_pin);
+    disable_timer_counter();
 
     bool pin_correct = false;
     
@@ -76,7 +80,7 @@ get_pin_code(char * entered_pin_code)
 {
     uint8_t counter = 0;
     //lcd_clrscr();
-    init_timeout_counter();
+    //init_timeout_counter();
     g_b_timeout = false; 
 
    while ((entered_pin_code[4] != '#') && (g_b_timeout != true))
@@ -161,9 +165,9 @@ get_pin_code(char * entered_pin_code)
     entered_pin_code[4]= '\0';
 
     // Set Global Timer counter off and disable interrupts
-    g_i_timeout = 0;
-    TCCR1B = 0;
-    cli();
+    // g_i_timeout = 0;
+    // TCCR1B = 0;
+    // cli();
 }
 
 bool
@@ -322,6 +326,13 @@ init_timeout_counter(void)
     // Enable interrupts
     sei();
 
+}
+
+void disable_timer_counter(void)
+{
+    g_i_timeout = 0;
+    TCCR1B = 0;
+    cli();
 }
 
 ISR
