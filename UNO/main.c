@@ -84,6 +84,8 @@ ISR
     else if (received_data == DEACTIVATE)
     {
         g_b_alarm_active = false;
+        PORTB &= ~(1 << PB5);
+        stop_alarm_sound();
         printf("Alarm deactivated, %d\n", g_b_alarm_active);
         SPI_slave_tx_rx(ACK);
     }
@@ -126,7 +128,7 @@ main (void)
         else
         {
             PORTB &= ~(1 << PB5);
-            stop_alarm_sound();
+            // stop_alarm_sound();
         }
     }
     
