@@ -24,6 +24,7 @@
 char g_c_pin[5] = "1234\0";
 bool g_b_alarm_active = false;
 uint8_t g_i_timeout = 0;
+volatile bool g_b_timeout = false;
 
 void uart_putchar(char c, FILE *stream);
 char uart_getchar(FILE *stream);
@@ -33,6 +34,8 @@ FILE uart_output = FDEV_SETUP_STREAM(uart_putchar, NULL, _FDEV_SETUP_WRITE);
 FILE uart_input = FDEV_SETUP_STREAM(NULL, uart_getchar, _FDEV_SETUP_READ);
 
 FILE uart_io = FDEV_SETUP_STREAM(uart_putchar, uart_getchar, _FDEV_SETUP_RW);
+
+void init_timeout_counter();
 
 bool
 check_pin(void)
@@ -73,8 +76,10 @@ get_pin_code(char * entered_pin_code)
 {
     uint8_t counter = 0;
     //lcd_clrscr();
+    init_timeout_counter();
+    g_b_timeout = false; 
 
-   while (counter < 4)
+   while ((counter < 4) && (g_b_timeout != true))
     {
         char key = KEYPAD_GetKey();
         switch (key)
@@ -91,13 +96,15 @@ get_pin_code(char * entered_pin_code)
             case '0':
                 entered_pin_code[counter] = key;
                 lcd_putc(entered_pin_code[counter]);
-                counter++; 
+                counter++;
+                g_i_timeout = 0; 
                 _delay_ms(200);
             break;
 
             case 'B':
               // Erases a digit 
-            
+                g_i_timeout = 0;
+
                 if (counter != 0)
                 {
                     --counter;
@@ -118,9 +125,11 @@ get_pin_code(char * entered_pin_code)
                 break;
     
             default:
+                //g_i_timeout = 0;
                 break;
         }
     }
+    cli();
 }
 
 bool
@@ -264,7 +273,7 @@ SPI_master_tx_rx(uint8_t data)
 }
 
 void
-init_timeout(void)
+init_timeout_counter(void)
 {
     // Normal mode
     TCCR1A = 0;
@@ -272,6 +281,7 @@ init_timeout(void)
     // Start timer with 1024 prescaler
     TCCR1B = (1 << CS12) | (1 << CS10);
 
+    TIMSK1 = (1 << TOIE1);
     // Enable interrupts
     sei();
 
@@ -281,11 +291,16 @@ init_timeout(void)
 ISR
 (TIMER1_OVF_vect)
 {
+   g_i_timeout++;
+
     if(g_i_timeout == 2)
     {
         lcd_clrscr();
         lcd_puts("Timeout!");
-
+        g_b_timeout = true;
+        g_i_timeout = 0;
+        cli();
+        _delay_ms(1000);
     }
 }
 
