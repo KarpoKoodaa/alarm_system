@@ -104,6 +104,7 @@ get_pin_code(char * entered_pin_code)
             case 'B':
               // Erases a digit 
                 g_i_timeout = 0;
+                TCCR1A = 0;
 
                 if (counter != 0)
                 {
@@ -129,6 +130,8 @@ get_pin_code(char * entered_pin_code)
                 break;
         }
     }
+    g_i_timeout = 0;
+    TCCR1B = 0;
     cli();
 }
 
@@ -275,6 +278,8 @@ SPI_master_tx_rx(uint8_t data)
 void
 init_timeout_counter(void)
 {
+    g_i_timeout = 0;
+
     // Normal mode
     TCCR1A = 0;
 
@@ -285,7 +290,6 @@ init_timeout_counter(void)
     // Enable interrupts
     sei();
 
-    return;
 }
 
 ISR
