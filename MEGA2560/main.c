@@ -10,7 +10,7 @@
 #define ACTIVATE 1          // Activate alarm
 #define DEACTIVATE 2        // Deactivate alarm 
 #define CHECK 3             // Check data SPI connection
-
+#define MAX_SIZE 4          // Max size of char PIN
 #include <avr/io.h>
 #include <util/delay.h>
 #include <string.h>
@@ -197,7 +197,8 @@ change_pin_code()
 
         if(strcmp(new_pin_code_1, new_pin_code_2) == 0)
         {
-            strcpy(g_c_pin,new_pin_code_2);
+            //strcpy(g_c_pin,new_pin_code_2);
+            write_pin_eeprom(new_pin_code_2);
             lcd_clrscr();
             lcd_puts("PIN CHANGED\n");
             _delay_ms(2000);
@@ -318,6 +319,46 @@ void SPI_connection_check()
 
 }
 
+void read_pin_eeprom(void)
+{
+    for (uint8_t address_index = 0; address_index < MAX_SIZE; address_index++)
+    {
+        while(EECR & (1 << EEPE))
+        {
+            // Wait until previous write done
+        }
+
+        EEAR = address_index;
+        EECR |= (1 << EERE);
+        g_c_pin[address_index] = EEDR;
+
+    }
+}
+
+void write_pin_eeprom(char * new_pin_code)
+{
+    for (uint8_t address_index = 0; address_index < MAX_SIZE; address_index++)
+    {
+
+        while (EECR & (1 << EEPE))
+        {
+            // Wait until previous write done
+        }
+
+        EEAR = address_index;
+        EEDR = new_pin_code[address_index];
+
+        // Enable master programming
+        EECR |= (1 << EEMPE);
+
+        // Enable EEPROM programming
+        EECR |= (1 << EEPE); 
+    }
+
+    // Read the new PIN code to Global variable
+    read_pin_eeprom();
+}
+
 void
 init_timeout_counter(void)
 {
@@ -365,6 +406,7 @@ main (void)
     KEYPAD_Init();
     uart_init();
     SPI_init();
+    read_pin_eeprom();
 
     lcd_init(LCD_DISP_ON);
     lcd_clrscr();
