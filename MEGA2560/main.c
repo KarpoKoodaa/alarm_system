@@ -9,6 +9,7 @@
 #define BAUD 9600           // BAUD speed for UART
 #define ACTIVATE 1          // Activate alarm
 #define DEACTIVATE 2        // Deactivate alarm 
+#define CHECK 3             // Check data SPI connection
 
 #include <avr/io.h>
 #include <util/delay.h>
@@ -25,6 +26,7 @@ char g_c_pin[5] = "1234\0";
 bool g_b_alarm_active = false;
 uint8_t g_i_timeout = 0;
 volatile bool g_b_timeout = false;
+volatile bool g_b_connection_status = false;
 
 void uart_putchar(char c, FILE *stream);
 char uart_getchar(FILE *stream);
@@ -163,11 +165,6 @@ get_pin_code(char * entered_pin_code)
 
     // Remove # from the end
     entered_pin_code[4]= '\0';
-
-    // Set Global Timer counter off and disable interrupts
-    // g_i_timeout = 0;
-    // TCCR1B = 0;
-    // cli();
 }
 
 bool
@@ -291,7 +288,7 @@ transmit_byte(uint8_t data)
     while(!(SPSR & (1 << SPIF)));
 }
 
-void
+uint8_t
 SPI_master_tx_rx(uint8_t data)
 {
 
@@ -308,6 +305,17 @@ SPI_master_tx_rx(uint8_t data)
 
     // Set SS High
     PORTB |= (1 << PB0);
+}
+
+void SPI_connection_check()
+{
+    uint8_t status = SPI_master_tx_rx(CHECK);
+    if (status != 3)
+    {
+        g_b_connection_status = false;
+    }
+    else g_b_connection_status = true;
+
 }
 
 void
@@ -365,6 +373,15 @@ main (void)
     lcd_puts("DEACTIVATED");
     _delay_ms(2000);
     lcd_clrscr();
+
+    SPI_connection_check();
+    lcd_clrscr();
+    while (!g_b_connection_status)
+    {
+        lcd_gotoxy(0,0);
+        lcd_puts("SPI CONNECTION\nERROR");
+        SPI_connection_check();
+    }
 
     while (1)
     {
