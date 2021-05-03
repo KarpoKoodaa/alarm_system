@@ -79,57 +79,88 @@ get_pin_code(char * entered_pin_code)
     init_timeout_counter();
     g_b_timeout = false; 
 
-   while ((counter < 4) && (g_b_timeout != true))
+   while ((entered_pin_code[4] != '#') && (g_b_timeout != true))
     {
-        char key = KEYPAD_GetKey();
-        switch (key)
+        if(counter < 5)
         {
-            case '1': 
-            case '2':
-            case '3':
-            case '4':
-            case '5': 
-            case '6':
-            case '7':
-            case '8':
-            case '9':
-            case '0':
-                entered_pin_code[counter] = key;
-                lcd_putc(entered_pin_code[counter]);
-                counter++;
-                g_i_timeout = 0; 
-                _delay_ms(200);
-            break;
+            char key = KEYPAD_GetKey();
+            switch (key)
+            {
+                // Takes 0-9 digits from keypad
 
-            case 'B':
-              // Erases a digit 
-                g_i_timeout = 0;
-                TCCR1A = 0;
-
-                if (counter != 0)
-                {
-                    --counter;
-                    entered_pin_code[counter] = 32; // Enter empty char
-                    lcd_gotoxy(counter, 1); 
+                case '1': 
+                case '2':
+                case '3':
+                case '4':
+                case '5': 
+                case '6':
+                case '7':
+                case '8':
+                case '9':
+                case '0':
+                case '#':
+                    entered_pin_code[counter] = key;
                     lcd_putc(entered_pin_code[counter]);
-                    lcd_gotoxy(counter, 1);
-                    _delay_ms(200); 
-                }
-                else if (counter == 0)
-                {
-                   // Blocks that no negative numbers on counter
+                    counter++;
+                    g_i_timeout = 0; 
+                    _delay_ms(200);
+                break;
 
-                   lcd_gotoxy(counter, 1);
-                   //counter = 0;
-                   _delay_ms(200);
-                }
-                break;
+                case 'B':
+                  // Erases a digit 
+
+                    g_i_timeout = 0;
+                    TCCR1A = 0;
+
+                    if (counter != 0)
+                    {
+                        --counter;
+                        entered_pin_code[counter] = 32; // Enter empty char
+                        lcd_gotoxy(counter, 1); 
+                        lcd_putc(entered_pin_code[counter]);
+                        lcd_gotoxy(counter, 1);
+                        _delay_ms(200); 
+                    }
+                    else if (counter == 0)
+                    {
+                       // Blocks that no negative numbers on counter
+
+                       lcd_gotoxy(counter, 1);
+                       //counter = 0;
+                       _delay_ms(200);
+                    }
+                    else 
+                    {
+
+                    }
+                    break;
     
-            default:
-                //g_i_timeout = 0;
-                break;
+                default:
+                    //g_i_timeout = 0;
+                    break;
+            }
         }
+        else
+        {
+            char key = KEYPAD_GetKey();
+            
+            if(key == 'B')
+            {
+                --counter;
+                entered_pin_code[counter] = 32; // Enter empty char
+                lcd_gotoxy(counter, 1); 
+                lcd_putc(entered_pin_code[counter]);
+                lcd_gotoxy(counter, 1);
+                _delay_ms(200);  
+            }
+        }
+        
     }
+
+    // Remove # from the end
+    entered_pin_code[4]= '\0';
+
+    // Set Global Timer counter off and disable interrupts
     g_i_timeout = 0;
     TCCR1B = 0;
     cli();
@@ -286,6 +317,7 @@ init_timeout_counter(void)
     // Start timer with 1024 prescaler
     TCCR1B = (1 << CS12) | (1 << CS10);
 
+    // Enable overflow interrupt
     TIMSK1 = (1 << TOIE1);
     // Enable interrupts
     sei();
