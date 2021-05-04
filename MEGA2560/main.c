@@ -11,6 +11,8 @@
 #define DEACTIVATE 2        // Deactivate alarm 
 #define CHECK 3             // Check data SPI connection
 #define MAX_SIZE 4          // Max size of char PIN
+
+
 #include <avr/io.h>
 #include <util/delay.h>
 #include <string.h>
@@ -18,7 +20,7 @@
 #include <util/setbaud.h>
 #include <stdio.h>
 #include <avr/interrupt.h>
-
+#include <avr/sleep.h>
 #include "lib/LCD/lcd.h"
 #include "lib/Keypad/keypad.h"
 
@@ -386,6 +388,15 @@ void disable_timer_counter(void)
     cli();
 }
 
+ISR (PCINT2_vect)
+{
+    printf("PCINT2 vector\n");
+    // Disable interrupts
+    PCMSK2 &= 0;
+    SMCR &= ~(1 << SE);
+    
+}
+
 ISR
 (TIMER1_OVF_vect)
 {
@@ -400,6 +411,27 @@ ISR
         cli();
         _delay_ms(1000);
     }
+}
+
+void go_standby_mode(void)
+{
+    lcd_clrscr();
+    lcd_puts("Standby mode");
+
+    sei();
+
+    // Enable Pin change mask register 2 interrupts
+    PCMSK2 = 1;
+
+    // Enable Sleep mode
+    SMCR |= (1 << SM1);
+    _delay_ms(100);
+
+    // Set Sleep enable bit
+    SMCR |= (1 << SE);
+
+    sleep_cpu();
+
 }
 
 int
@@ -432,27 +464,67 @@ main (void)
         bool pin_status = false;
         /* code */
         lcd_clrscr();
+        
+        lcd_puts("'*' for menu\n'#' for standby");
+        char pressed_key = KEYPAD_GetKey();
+        while (pressed_key != '*' && pressed_key != '#')
+        {
+            pressed_key = KEYPAD_GetKey();
+        }
+
+        if (pressed_key == '*')
+        {
+            // MENU
+            pin_status = show_menu();
+            lcd_clrscr();
+            lcd_puts("Entered PIN:");
+            lcd_gotoxy(0, 1);
+            if(pin_status)
+            {
+                lcd_puts("PIN CORRECT");
+                if(!g_b_alarm_active)
+                {
+                    SPI_master_tx_rx(ACTIVATE);
+
+                }
+                else SPI_master_tx_rx(DEACTIVATE);
+                g_b_alarm_active = !g_b_alarm_active;
+            }
+            else lcd_puts("PIN INCORRECT");
+            _delay_ms(2000);
+        }
+        else
+        {
+            // Will go to standby mode
+            // TODO standby mode
+            lcd_clrscr();
+            lcd_puts("STANDBY!!!");
+            go_standby_mode();
+            _delay_ms(2000);
+        }
+        
+        
         // lcd_puts("Press a button");
         // while (!KEYPAD_GetKey());
         //show_menu();
 
-        pin_status = show_menu();
-        lcd_clrscr();
-        lcd_puts("Entered PIN:");
-        lcd_gotoxy(0, 1);
-        if(pin_status)
-        {
-            lcd_puts("PIN CORRECT");
-            if(!g_b_alarm_active)
-            {
-                SPI_master_tx_rx(ACTIVATE);
+        // pin_status = show_menu();
+        // lcd_clrscr();
+        // lcd_puts("Entered PIN:");
+        // lcd_gotoxy(0, 1);
+        // if(pin_status)
+        // {
+        //     lcd_puts("PIN CORRECT");
+        //     if(!g_b_alarm_active)
+        //     {
+        //         SPI_master_tx_rx(ACTIVATE);
                 
-            }
-            else SPI_master_tx_rx(DEACTIVATE);
-            g_b_alarm_active = !g_b_alarm_active;
-        }
-        else lcd_puts("PIN INCORRECT");
-        _delay_ms(5000);
+        //     }
+        //     else SPI_master_tx_rx(DEACTIVATE);
+        //     g_b_alarm_active = !g_b_alarm_active;
+        // }
+        // else lcd_puts("PIN INCORRECT");
+        // _delay_ms(5000);
     }
 }
 
