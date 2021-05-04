@@ -306,6 +306,8 @@ SPI_master_tx_rx(uint8_t data)
 
     // Set SS High
     PORTB |= (1 << PB0);
+
+    return received_data;
 }
 
 void SPI_connection_check()
