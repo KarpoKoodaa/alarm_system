@@ -390,11 +390,11 @@ void disable_timer_counter(void)
 
 ISR (PCINT2_vect)
 {
-    printf("PCINT2 vector\n");
     // Disable interrupts
-    PCMSK2 &= 0;
+    PCMSK2 &= ~(00000000);
+    PCIFR &= ~(1 << PCIF2);
     SMCR &= ~(1 << SE);
-    
+    _delay_ms(50);
 }
 
 ISR
@@ -418,11 +418,15 @@ void go_standby_mode(void)
     lcd_clrscr();
     lcd_puts("Standby mode");
 
-    sei();
+    //cli();
+    PCIFR |= (1 << PCIF2);
 
+    PCICR |= (1 << PCIE2);
     // Enable Pin change mask register 2 interrupts
-    PCMSK2 = 1;
+    //PCMSK2 |= (1 << PCINT23) | (1 << PCINT22) | (1 << PCINT21) | (1 << PCINT20) | (1 << PCINT19) | (1 << PCINT18) | (1 << PCINT17) | (1 << PCINT16);
+    PCMSK2 |= 0xFF;
 
+    sei();
     // Enable Sleep mode
     SMCR |= (1 << SM1);
     _delay_ms(100);
@@ -497,10 +501,11 @@ main (void)
         {
             // Will go to standby mode
             // TODO standby mode
+            _delay_ms(100);
             lcd_clrscr();
             lcd_puts("STANDBY!!!");
             go_standby_mode();
-            _delay_ms(2000);
+            //_delay_ms(2000);
         }
         
         
