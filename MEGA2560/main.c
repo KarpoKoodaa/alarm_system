@@ -391,7 +391,10 @@ void disable_timer_counter(void)
 ISR (PCINT2_vect)
 {
     // Disable interrupts
+    //DDRK &= ~((1 << PK0) | (1 << PK1) | (1 << PK2) | (1 << PK3));
+    //DDRK = 11110000;
     PCMSK2 &= ~(00000000);
+
     PCIFR &= ~(1 << PCIF2);
     SMCR &= ~(1 << SE);
     _delay_ms(50);
@@ -416,15 +419,21 @@ ISR
 void go_standby_mode(void)
 {
     lcd_clrscr();
-    lcd_puts("Standby mode");
+    lcd_puts("Press '1'\nto wake up");
 
-    //cli();
+    // Check that there is no unexpected interrupt
     PCIFR |= (1 << PCIF2);
 
     PCICR |= (1 << PCIE2);
     // Enable Pin change mask register 2 interrupts
-    //PCMSK2 |= (1 << PCINT23) | (1 << PCINT22) | (1 << PCINT21) | (1 << PCINT20) | (1 << PCINT19) | (1 << PCINT18) | (1 << PCINT17) | (1 << PCINT16);
-    PCMSK2 |= 0xFF;
+   // PCMSK2 |= (1 << PCINT23) | (1 << PCINT22) | (1 << PCINT21) | (1 << PCINT20); // | (1 << PCINT19) | (1 << PCINT18) | (1 << PCINT17) | (1 << PCINT16);
+    //PCMSK2 |= (1 << PCINT19) | (1 << PCINT18) | (1 << PCINT17) | (1 << PCINT16);
+    PCMSK2 |= (1 << PCINT16);
+    //PCMSK2 |= 0xff;
+
+    // Enable the ROWS for interrupt pins
+    // DDRK &= ~((1 << PK0) | (1 << PK1) | (1 << PK2) | (1 << PK3));
+    // PORTA |= (1 << PK0) | (1 << PK1) | (1 << PK2) | (1 << PK3);
 
     sei();
     // Enable Sleep mode
@@ -469,14 +478,14 @@ main (void)
         /* code */
         lcd_clrscr();
         
-        lcd_puts("'*' for menu\n'#' for standby");
+        lcd_puts("'#' for menu\n'*' for standby");
         char pressed_key = KEYPAD_GetKey();
         while (pressed_key != '*' && pressed_key != '#')
         {
             pressed_key = KEYPAD_GetKey();
         }
 
-        if (pressed_key == '*')
+        if (pressed_key == '#')
         {
             // MENU
             pin_status = show_menu();
@@ -497,15 +506,22 @@ main (void)
             else lcd_puts("PIN INCORRECT");
             _delay_ms(2000);
         }
-        else
+        else if(pressed_key == '*')
         {
             // Will go to standby mode
             // TODO standby mode
             _delay_ms(100);
             lcd_clrscr();
             lcd_puts("STANDBY!!!");
+            _delay_ms(1000);
             go_standby_mode();
             //_delay_ms(2000);
+        }
+        else 
+        {
+            lcd_clrscr();
+            lcd_puts("Unexpected\nERROR");
+            _delay_ms(1500);
         }
         
         
