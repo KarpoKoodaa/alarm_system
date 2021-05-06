@@ -30,8 +30,7 @@ FILE uart_input = FDEV_SETUP_STREAM(NULL, uart_getchar, _FDEV_SETUP_READ);
 
 FILE uart_io = FDEV_SETUP_STREAM(uart_putchar, uart_getchar, _FDEV_SETUP_RW);
 
-void 
-set_timer_01(void)
+void set_timer_01(void)
 {
     TCCR1B = 0; 
     TCNT1 = 0;
@@ -39,22 +38,21 @@ set_timer_01(void)
     OCR1A = 15300;
 
 }
-void 
-start_alarm_sound(void)
+
+void start_alarm_sound(void)
 {
     if(g_b_alarm_active)
     {
         TCCR1B |= (1 << CS10);
     }
 }
-void
-stop_alarm_sound(void)
+
+void stop_alarm_sound(void)
 {
     TCCR1B &= ~(1 << CS10);
 }
 
-void
-SPI_init(void)
+void SPI_init(void)
 {
     // Set MISO output
     DDRB |= (1 << PB4);
@@ -63,15 +61,13 @@ SPI_init(void)
     SPCR |= (1 << SPE) | (1 << SPIE);
 }
 
-void
-SPI_slave_tx_rx(uint8_t data)
+void SPI_slave_tx_rx(uint8_t data)
 {
     // Add data to SPI register
     SPDR = data;
 }
 
-ISR
-(SPI_STC_vect)
+ISR (SPI_STC_vect)
 {
     uint8_t received_data = SPDR;
 
@@ -101,8 +97,8 @@ ISR
     }
    
 }
-int
-main (void)
+
+int main (void)
 {
     // Init PD7 (PIR Sensor) as output
     DDRD &= ~(1 << PD7);
@@ -112,8 +108,11 @@ main (void)
     DDRB |= (1 << PB1);
 
     uart_init();
+
+    // Initialize SPI interface
     SPI_init();
 
+	// Start PWM to make the buzzer sound if alarm activates
     set_timer_01();
     sei();
 
