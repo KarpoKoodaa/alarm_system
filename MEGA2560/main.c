@@ -40,12 +40,24 @@ FILE uart_input = FDEV_SETUP_STREAM(NULL, uart_getchar, _FDEV_SETUP_READ);
 FILE uart_io = FDEV_SETUP_STREAM(uart_putchar, uart_getchar, _FDEV_SETUP_RW);
 
 void init_timeout_counter();
+void get_pin_code(char * entered_pin_code);
+bool change_pin_code();
+bool show_menu();
+void SPI_init(void);
+void transmit_byte(uint8_t data);
+uint8_t SPI_master_tx_rx(uint8_t data);
+void SPI_connection_check();
+void read_pin_eeprom(void);
+void write_pin_eeprom(char * new_pin_code);
+void init_timeout_counter(void);
+void disable_timer_counter(void);
+void go_standby_mode(void);
 
 bool
 check_pin(void)
 {
     char entered_pin[5] = {0, 0, 0, 0, 0};
-    uint8_t counter = 0;
+    //uint8_t counter = 0;
 
     init_timeout_counter();
     
@@ -79,8 +91,7 @@ check_pin(void)
     return pin_correct;
 }
 
-void
-get_pin_code(char * entered_pin_code)
+void get_pin_code(char * entered_pin_code)
 {
     uint8_t counter = 0;
     //lcd_clrscr();
@@ -169,8 +180,7 @@ get_pin_code(char * entered_pin_code)
     entered_pin_code[4]= '\0';
 }
 
-bool
-change_pin_code()
+bool change_pin_code()
 {
     char entered_pin_code[5] = {0, 0, 0, 0, 0};
 
@@ -214,8 +224,7 @@ change_pin_code()
     return pin_correct;
 }
 
-bool
-show_menu()
+bool show_menu()
 {
     
     lcd_clrscr();
@@ -259,10 +268,11 @@ show_menu()
     } while(menu_choice == 'z');
 
     _delay_ms(5000);
+
+    return false;
 }
 
-void
-SPI_init(void)
+void SPI_init(void)
 {
     // Set MOSI, SS and SCK ouput
     DDRB |= (1 << PB2) | (1 << PB1) | (1 << PB0);
@@ -281,8 +291,7 @@ SPI_init(void)
 
 }
 
-void
-transmit_byte(uint8_t data)
+void transmit_byte(uint8_t data)
 {
     // Load data into register
     SPDR = data;
@@ -291,8 +300,7 @@ transmit_byte(uint8_t data)
     while(!(SPSR & (1 << SPIF)));
 }
 
-uint8_t
-SPI_master_tx_rx(uint8_t data)
+uint8_t SPI_master_tx_rx(uint8_t data)
 {
 
     uint8_t received_data = 0;
@@ -363,8 +371,7 @@ void write_pin_eeprom(char * new_pin_code)
     read_pin_eeprom();
 }
 
-void
-init_timeout_counter(void)
+void init_timeout_counter(void)
 {
     g_i_timeout = 0;
 
@@ -400,8 +407,7 @@ ISR (PCINT2_vect)
     _delay_ms(50);
 }
 
-ISR
-(TIMER1_OVF_vect)
+ISR (TIMER1_OVF_vect)
 {
    g_i_timeout++;
 
@@ -447,8 +453,7 @@ void go_standby_mode(void)
 
 }
 
-int
-main (void)
+int main (void)
 {
     KEYPAD_Init();
     uart_init();
