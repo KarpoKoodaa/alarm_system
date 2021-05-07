@@ -25,7 +25,9 @@
 //
 #define ACTIVATE 1          // Activate Alarm
 #define DEACTIVATE 2        // Deactivate
-#define ACK 1                // ACK
+#define CHECK 3             // Connection check
+#define EMPTY 255           // Empty data 
+#define ACK 1               // ACK
 
 // Global Variables for SPI communication
 //
@@ -112,27 +114,37 @@ ISR (SPI_STC_vect)
 
     if (received_data == ACTIVATE)
     {
+        // Arm the alarm system
         g_b_alarm_active = true;
         printf("Alarm activated, %d\n", g_b_alarm_active);
         SPI_slave_tx_rx(ACK);
     }
     else if (received_data == DEACTIVATE)
     {
+        // Dearm the alarm system
         g_b_alarm_active = false;
+
+        // Deactivate the PIR sensor
         PORTB &= ~(1 << PB5);
+
+        // Stop the alarm sound
         stop_alarm_sound();
         printf("Alarm deactivated, %d\n", g_b_alarm_active);
+
+        // Send ACK to Master
         SPI_slave_tx_rx(ACK);
     }
-    else if ((received_data == 3) || (received_data == 255))
+    else if ((received_data == CHECK) || (received_data == EMPTY))
     {
+        // Send ACK to Master if check is requested
         SPI_slave_tx_rx(ACK);
         
     }
     else
     {
+       // Increase Fail counter if incorrect data received
+       // Is used for debugging if needed
         g_fail_counter++;
-        printf("f: %d\n", received_data);
     }
    
 }
@@ -141,23 +153,26 @@ int main (void)
 {
     // Init PD7 (PIR Sensor) as output
     DDRD &= ~(1 << PD7);
-    DDRB |= (1 << PB5);
 
+    // Why this??
+  //  DDRB |= (1 << PB5);
 
+    // Init PB1 as buzzer
     DDRB |= (1 << PB1);
 
-    uart_init();
+    //uart_init();
 
     // Initialize SPI interface
     SPI_init();
 
 	// Start PWM to make the buzzer sound if alarm activates
     set_timer_01();
+
     sei();
 
     while (1)
     {
-        /* code */
+        // Activate Buzzer if PIR sensor active
         if(PIND & (1 << PD7))
         {
             PORTB |= (1 << PB5);
@@ -165,8 +180,8 @@ int main (void)
         }
         else
         {
+            // Clear the PIR sensor
             PORTB &= ~(1 << PB5);
-            // stop_alarm_sound();
         }
     }
     
