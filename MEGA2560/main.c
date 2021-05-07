@@ -30,7 +30,7 @@
 
 // Parameters to handle SPI communcations
 //
-#define ACTIVATE 1          // Activate alarm
+#define ACTIVATE 5          // Activate alarm
 #define DEACTIVATE 2        // Deactivate alarm 
 #define CHECK 3             // Check data SPI connection
 #define OK 3               // Connection ok
@@ -559,6 +559,7 @@ int main (void)
     // Init Keypad
     KEYPAD_Init();
     
+    // Delay 1 second to get the SPI to be enabled
     // Init SPI connection
     SPI_init();
 
@@ -580,7 +581,7 @@ int main (void)
     while (!g_b_connection_status)
     {
         lcd_gotoxy(0,0);
-        lcd_puts("SPI CONNECTION\nERROR");
+        lcd_puts("SPI ERROR\nPress UNO reset");
         SPI_connection_check();
     }
 

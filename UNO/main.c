@@ -23,7 +23,7 @@
 
 // Parameters to handle SPI communication
 //
-#define ACTIVATE 1          // Activate Alarm
+#define ACTIVATE 5          // Activate Alarm
 #define DEACTIVATE 2        // Deactivate
 #define CHECK 3             // Connection check
 #define EMPTY 255           // Empty data 
@@ -151,6 +151,9 @@ ISR (SPI_STC_vect)
 
 int main (void)
 {
+    // Initialize SPI interface
+    SPI_init();
+
     // Init PD7 (PIR Sensor) as output
     DDRD &= ~(1 << PD7);
 
@@ -161,9 +164,6 @@ int main (void)
     DDRB |= (1 << PB1);
 
     //uart_init();
-
-    // Initialize SPI interface
-    SPI_init();
 
 	// Start PWM to make the buzzer sound if alarm activates
     set_timer_01();
