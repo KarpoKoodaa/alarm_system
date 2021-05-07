@@ -13,11 +13,6 @@
 
 #define F_CPU 16000000UL    // 16MHz Clock
 #define BAUD 9600           // BAUD speed for UART
-// #define ACTIVATE 1          // Activate alarm
-// #define DEACTIVATE 2        // Deactivate alarm 
-// #define CHECK 3             // Check data SPI connection
-// #define MAX_SIZE 4          // Max size of char PIN
-
 
 #include <avr/io.h>
 #include <util/delay.h>
@@ -27,6 +22,9 @@
 #include <stdio.h>
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
+
+// Libraries for LCD and Keypad
+//
 #include "lib/LCD/lcd.h"
 #include "lib/Keypad/keypad.h"
 
@@ -55,17 +53,6 @@ uint8_t g_i_timeout = 0;                        // Global Variable for timeout c
 volatile bool g_b_timeout = false;              // Global Variable for timeout
 volatile bool g_b_connection_status = false;    // Global Variable for SPI connection status
 
-// This one to be clean up
-//
-void uart_putchar(char c, FILE *stream);
-char uart_getchar(FILE *stream);
-
-void uart_init();
-FILE uart_output = FDEV_SETUP_STREAM(uart_putchar, NULL, _FDEV_SETUP_WRITE);
-FILE uart_input = FDEV_SETUP_STREAM(NULL, uart_getchar, _FDEV_SETUP_READ);
-
-FILE uart_io = FDEV_SETUP_STREAM(uart_putchar, uart_getchar, _FDEV_SETUP_RW);
-
 // Declarations of all functions
 // 
 void init_timeout_counter();
@@ -82,15 +69,16 @@ void init_timeout_counter(void);
 void disable_timer_counter(void);
 void go_standby_mode(void);
 
-// @brief Asks user to input PIN code and checks if correct.
-// If alarm is armed, will show "Alarm active" on LCD
-// @return The entered PIN boolean
-//
+/*! 
+ * @brief Asks user to input PIN code and checks if correct.
+ * If alarm is armed, will show "Alarm active" on LCDa
+ * @return The entered PIN boolean
+ */
 bool check_pin(void)
 {
     char entered_pin[5] = {0, 0, 0, 0, 0};
-    //uint8_t counter = 0;
 
+    // Start timeout counter to timeout if no input
     init_timeout_counter();
     
     if(g_b_alarm_active)
@@ -105,7 +93,10 @@ bool check_pin(void)
     lcd_gotoxy(0,1);
     _delay_ms(500);
 
+    // Ask PIN code from user
     get_pin_code(entered_pin);
+
+    // Disable timeout
     disable_timer_counter();
 
     bool pin_correct = false;
@@ -131,8 +122,6 @@ bool check_pin(void)
 void get_pin_code(char * entered_pin_code)
 {
     uint8_t counter = 0;
-    //lcd_clrscr();
-    //init_timeout_counter();
     g_b_timeout = false; 
 
    while ((entered_pin_code[4] != '#') && (g_b_timeout != true))
@@ -142,8 +131,7 @@ void get_pin_code(char * entered_pin_code)
             char key = KEYPAD_GetKey();
             switch (key)
             {
-                // Takes 0-9 digits from keypad
-
+                // Accepts 0-9 digits or '#' from keypad
                 case '1': 
                 case '2':
                 case '3':
@@ -162,9 +150,9 @@ void get_pin_code(char * entered_pin_code)
                     _delay_ms(200);
                 break;
 
-                case 'B':
-                  // Erases a digit 
+                case 'B': // (B)ackspace erases a digit 
 
+                    // Clears timer as input received
                     g_i_timeout = 0;
                     TCCR1A = 0;
 
@@ -182,17 +170,11 @@ void get_pin_code(char * entered_pin_code)
                        // Keeps the "cursor" at the beginning of the LCD screen 
 
                        lcd_gotoxy(counter, 1);
-                       //counter = 0;
                        _delay_ms(200);
-                    }
-                    else 
-                    {
-
                     }
                     break;
     
                 default:
-                    //g_i_timeout = 0;
                     break;
             }
         }
@@ -267,8 +249,8 @@ bool change_pin_code()
 }
 
 /*! 
- * @brief Displays the MENU for the user and user can choise to arm the alarm or change PIN
- * @return Status of PIN change (TODO: Fix this)
+ * @brief Displays the MENU for the user. User can arm/dearm the alarm or change PIN
+ * @return Status of PIN change, 1 = OK, 2 = CHANGED & 3 = NOK
  */
 uint8_t show_menu()
 {
@@ -295,8 +277,9 @@ uint8_t show_menu()
     
     char menu_choice = 0;
     
-    do
+    while ((menu_choice != '1') && (menu_choice != '2'))
     {
+
         menu_choice = KEYPAD_GetKey();
     
         switch (menu_choice)
@@ -327,13 +310,8 @@ uint8_t show_menu()
             default:
             break;
         }
-        
-    } while(menu_choice == 'z');
-
-    // Why this is needed?
-    _delay_ms(2000);
-
-    return false;
+    }
+    return NOK;
 }
 
 /*!
@@ -578,11 +556,16 @@ void go_standby_mode(void)
 
 int main (void)
 {
+    // Init Keypad
     KEYPAD_Init();
-    uart_init();
+    
+    // Init SPI connection
     SPI_init();
+
+    // Read the PIN code from EEPROM
     read_pin_eeprom();
 
+    // Init LCD
     lcd_init(LCD_DISP_ON);
     lcd_clrscr();
 
@@ -591,6 +574,7 @@ int main (void)
     _delay_ms(2000);
     lcd_clrscr();
 
+    // Check that SPI connection is working
     SPI_connection_check();
     lcd_clrscr();
     while (!g_b_connection_status)
@@ -603,11 +587,12 @@ int main (void)
     while (1)
     {
         uint8_t pin_status = 0;
-        /* code */
         lcd_clrscr();
-        
+
+        // Show options to go menu or standby mode        
         lcd_puts("'#' for menu\n'*' for standby");
         char pressed_key = KEYPAD_GetKey();
+        
         while (pressed_key != '*' && pressed_key != '#')
         {
             pressed_key = KEYPAD_GetKey();
@@ -615,11 +600,13 @@ int main (void)
 
         if (pressed_key == '#')
         {
-            // MENU
+            // Go to MENU
             pin_status = show_menu();
+            
             lcd_clrscr();
             lcd_puts("Alarm System");
             lcd_gotoxy(0, 1);
+            
             if(pin_status == OK)
             {
                 lcd_puts("PIN CORRECT");
@@ -645,7 +632,8 @@ int main (void)
             }
             else
             {
-                lcd_puts("Unexcpected\nError");
+                lcd_clrscr();
+                lcd_puts("Unexcpected\nErro");
                 _delay_ms(1500);
             }
         }
@@ -654,7 +642,8 @@ int main (void)
             // Will go to standby mode
             _delay_ms(100);
             lcd_clrscr();
-            lcd_puts("STANDBY!!!");
+            
+            lcd_puts("Standby");
             _delay_ms(1000);
             go_standby_mode();
         }
@@ -669,37 +658,3 @@ int main (void)
 }
 
 
-// UART FOR TROUBLESHOOTING
-
-void
-uart_init()
-{
-    UBRR0H = UBRRH_VALUE;
-    UBRR0L = UBRRL_VALUE;
-
-    
-    UCSR0B = (1 << TXEN0) | (1 << RXEN0);
-
-    UCSR0C = (1 << UCSZ01) | (1 << UCSZ00);
-     
-    stdout = &uart_output;
-    stdin = &uart_input;
-}
-
-void
-uart_putchar(char c, FILE *stream)
-{
-    if(c == '\n')
-    {
-        uart_putchar('\r', stream);
-    }
-    loop_until_bit_is_set(UCSR0A, UDRE0);
-    UDR0 = c;
-}
-
-char
-uart_getchar(FILE *stream)
-{
-    loop_until_bit_is_set(UCSR0A, RXC0);
-    return UDR0;
-}
