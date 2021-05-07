@@ -1,16 +1,22 @@
 /*
+ * This is an exercise work of Introduction to Embedded Systems course. 
+ * The alarm system is build using Arduino MEGA 2560 (ATmega2560) and Arduino UNO (ATmega328p)
+ *
  * main.c
- * Master
+ *
+ * Master device
+ * 
  * Created: 02.04.2021
- * Author : Kariantti 
+ * 
+ * Author : Kariantti Laitala
  */ 
 
 #define F_CPU 16000000UL    // 16MHz Clock
 #define BAUD 9600           // BAUD speed for UART
-#define ACTIVATE 1          // Activate alarm
-#define DEACTIVATE 2        // Deactivate alarm 
-#define CHECK 3             // Check data SPI connection
-#define MAX_SIZE 4          // Max size of char PIN
+// #define ACTIVATE 1          // Activate alarm
+// #define DEACTIVATE 2        // Deactivate alarm 
+// #define CHECK 3             // Check data SPI connection
+// #define MAX_SIZE 4          // Max size of char PIN
 
 
 #include <avr/io.h>
@@ -24,12 +30,26 @@
 #include "lib/LCD/lcd.h"
 #include "lib/Keypad/keypad.h"
 
-char g_c_pin[5] = "1234\0";
-bool g_b_alarm_active = false;
-uint8_t g_i_timeout = 0;
-volatile bool g_b_timeout = false;
-volatile bool g_b_connection_status = false;
+// Parameters to handle SPI communcations
+//
+#define ACTIVATE 1          // Activate alarm
+#define DEACTIVATE 2        // Deactivate alarm 
+#define CHECK 3             // Check data SPI connection
 
+// Parameter to define MAX size of PIN code array
+//
+#define MAX_SIZE 4          // Max size of char PIN
+
+// Global variables
+//
+char g_c_pin[5] = "1234\0";                     // Global Variable for PIN code
+bool g_b_alarm_active = false;                  // Global Variable for alarm status
+uint8_t g_i_timeout = 0;                        // Global Variable for timeout counter
+volatile bool g_b_timeout = false;              // Global Variable for timeout
+volatile bool g_b_connection_status = false;    // Global Variable for SPI connection status
+
+// This one to be clean up
+//
 void uart_putchar(char c, FILE *stream);
 char uart_getchar(FILE *stream);
 
@@ -39,6 +59,8 @@ FILE uart_input = FDEV_SETUP_STREAM(NULL, uart_getchar, _FDEV_SETUP_READ);
 
 FILE uart_io = FDEV_SETUP_STREAM(uart_putchar, uart_getchar, _FDEV_SETUP_RW);
 
+// Declarations of all functions
+// 
 void init_timeout_counter();
 void get_pin_code(char * entered_pin_code);
 bool change_pin_code();
@@ -53,8 +75,11 @@ void init_timeout_counter(void);
 void disable_timer_counter(void);
 void go_standby_mode(void);
 
-bool
-check_pin(void)
+// @brief Asks user to input PIN code and checks if correct.
+// If alarm is armed, will show "Alarm active" on LCD
+// @return The entered PIN boolean
+//
+bool check_pin(void)
 {
     char entered_pin[5] = {0, 0, 0, 0, 0};
     //uint8_t counter = 0;
@@ -91,6 +116,11 @@ check_pin(void)
     return pin_correct;
 }
 
+/*!
+ * @brief Receives PIN code as user input
+ * @param[in] entered_pin_code A pointer to array that is used for user PIN code
+ * 
+ */
 void get_pin_code(char * entered_pin_code)
 {
     uint8_t counter = 0;
@@ -142,7 +172,7 @@ void get_pin_code(char * entered_pin_code)
                     }
                     else if (counter == 0)
                     {
-                       // Blocks that no negative numbers on counter
+                       // Keeps the "cursor" at the beginning of the LCD screen 
 
                        lcd_gotoxy(counter, 1);
                        //counter = 0;
@@ -176,10 +206,14 @@ void get_pin_code(char * entered_pin_code)
         
     }
 
-    // Remove # from the end
+    // Remove # from the end and NULL
     entered_pin_code[4]= '\0';
 }
 
+/*!
+ * @brief Changes the PIN code that is stored to EEPROM
+ * @return Status of the change
+ */
 bool change_pin_code()
 {
     char entered_pin_code[5] = {0, 0, 0, 0, 0};
@@ -224,6 +258,10 @@ bool change_pin_code()
     return pin_correct;
 }
 
+/*! 
+ * @brief Displays the MENU for the user and user can choise to arm the alarm or change PIN
+ * @return Status of PIN change (TODO: Fix this)
+ */
 bool show_menu()
 {
     
@@ -272,6 +310,9 @@ bool show_menu()
     return false;
 }
 
+/*!
+ * @brief Initializes SPI connection 
+ */
 void SPI_init(void)
 {
     // Set MOSI, SS and SCK ouput
@@ -291,6 +332,10 @@ void SPI_init(void)
 
 }
 
+/*!
+ * @brief Transmits one (1) byte to Slave over SPI
+ * @param[in] data the data that is sent over to Slave
+ */
 void transmit_byte(uint8_t data)
 {
     // Load data into register
@@ -300,10 +345,16 @@ void transmit_byte(uint8_t data)
     while(!(SPSR & (1 << SPIF)));
 }
 
+/*!
+ * @brief Transmits and Receives data over the SPI
+ * @param[in] Data that is sent over the SPI
+ * @return The received data
+ */
 uint8_t SPI_master_tx_rx(uint8_t data)
 {
 
     uint8_t received_data = 0;
+  
     // Set SS Low
     PORTB &= ~(1 << PB0);
 
@@ -320,6 +371,11 @@ uint8_t SPI_master_tx_rx(uint8_t data)
     return received_data;
 }
 
+/*!
+ * @brief Check status of SPI connection between Master and Slave. 
+ * The status is stored to Global Variable g_b_connection_status
+ *
+ */
 void SPI_connection_check()
 {
     uint8_t status = SPI_master_tx_rx(CHECK);
@@ -331,6 +387,10 @@ void SPI_connection_check()
 
 }
 
+/*!
+ * @brief Reads the PIN code that is stored in EEPROM
+ *
+ */
 void read_pin_eeprom(void)
 {
     for (uint8_t address_index = 0; address_index < MAX_SIZE; address_index++)
@@ -347,6 +407,10 @@ void read_pin_eeprom(void)
     }
 }
 
+/*!
+ * @brief Stores new PIN code to EEPROM and reads the PIN code from EEPROM
+ * @param[in] new_pin_code Pointer to new PIN code inserted by the user
+ */
 void write_pin_eeprom(char * new_pin_code)
 {
     for (uint8_t address_index = 0; address_index < MAX_SIZE; address_index++)
@@ -371,6 +435,10 @@ void write_pin_eeprom(char * new_pin_code)
     read_pin_eeprom();
 }
 
+/*!
+ * @brief Initializes the counter that is used for input timeout
+ *
+ */
 void init_timeout_counter(void)
 {
     g_i_timeout = 0;
@@ -388,6 +456,10 @@ void init_timeout_counter(void)
 
 }
 
+/*!
+ * @brief Disables the counter that is used for input timeout
+ *
+ */
 void disable_timer_counter(void)
 {
     g_i_timeout = 0;
@@ -395,6 +467,10 @@ void disable_timer_counter(void)
     cli();
 }
 
+/*!
+ * @brief Interrupt Service Request to wake up the device from sleep. Disables the PCINT interrupts so Keypad works normally after wake up
+ *
+ */
 ISR (PCINT2_vect)
 {
     // Disable interrupts
@@ -407,6 +483,10 @@ ISR (PCINT2_vect)
     _delay_ms(50);
 }
 
+/*!
+ * @brief Interrupt Service Request to timeout if no user input received.
+ *
+ */
 ISR (TIMER1_OVF_vect)
 {
    g_i_timeout++;
@@ -422,6 +502,10 @@ ISR (TIMER1_OVF_vect)
     }
 }
 
+/*!
+ * @brief Enables the Standby mode for the device. Enables the interrups for PCINT16.
+ *
+ */
 void go_standby_mode(void)
 {
     lcd_clrscr();
@@ -514,13 +598,11 @@ int main (void)
         else if(pressed_key == '*')
         {
             // Will go to standby mode
-            // TODO standby mode
             _delay_ms(100);
             lcd_clrscr();
             lcd_puts("STANDBY!!!");
             _delay_ms(1000);
             go_standby_mode();
-            //_delay_ms(2000);
         }
         else 
         {
@@ -529,28 +611,6 @@ int main (void)
             _delay_ms(1500);
         }
         
-        
-        // lcd_puts("Press a button");
-        // while (!KEYPAD_GetKey());
-        //show_menu();
-
-        // pin_status = show_menu();
-        // lcd_clrscr();
-        // lcd_puts("Entered PIN:");
-        // lcd_gotoxy(0, 1);
-        // if(pin_status)
-        // {
-        //     lcd_puts("PIN CORRECT");
-        //     if(!g_b_alarm_active)
-        //     {
-        //         SPI_master_tx_rx(ACTIVATE);
-                
-        //     }
-        //     else SPI_master_tx_rx(DEACTIVATE);
-        //     g_b_alarm_active = !g_b_alarm_active;
-        // }
-        // else lcd_puts("PIN INCORRECT");
-        // _delay_ms(5000);
     }
 }
 
