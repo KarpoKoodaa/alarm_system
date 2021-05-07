@@ -614,6 +614,9 @@ int main (void)
                 if(!g_b_alarm_active)
                 {
                     SPI_master_tx_rx(ACTIVATE);
+                    lcd_clrscr();
+                    lcd_puts("Alarm Armed");
+                    _delay_ms(1500);
 
                 }
                 else SPI_master_tx_rx(DEACTIVATE);
