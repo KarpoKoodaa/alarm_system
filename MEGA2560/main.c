@@ -311,7 +311,7 @@ bool show_menu()
 }
 
 /*!
- * @brief Initializes SPI connection 
+ * @brief Initializes SPI connection and set device as Master
  */
 void SPI_init(void)
 {
@@ -334,7 +334,7 @@ void SPI_init(void)
 
 /*!
  * @brief Transmits one (1) byte to Slave over SPI
- * @param[in] data the data that is sent over to Slave
+ * @param[in] data The data that is sent over to Slave
  */
 void transmit_byte(uint8_t data)
 {
@@ -468,7 +468,7 @@ void disable_timer_counter(void)
 }
 
 /*!
- * @brief Interrupt Service Request to wake up the device from sleep. Disables the PCINT interrupts so Keypad works normally after wake up
+ * @brief Interrupt Service Routine to wake up the device from sleep. Disables the PCINT interrupts so Keypad works normally after wake up
  *
  */
 ISR (PCINT2_vect)
@@ -484,7 +484,7 @@ ISR (PCINT2_vect)
 }
 
 /*!
- * @brief Interrupt Service Request to timeout if no user input received.
+ * @brief Interrupt Service Routine to timeout if no user input received.
  *
  */
 ISR (TIMER1_OVF_vect)

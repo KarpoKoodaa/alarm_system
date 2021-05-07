@@ -1,15 +1,21 @@
 /*
+ * This is an exercise work of Introduction to Embedded Systems course.
+ * The alarm system is build using Arduino MEGA 2560 (ATmega2560) and Arduino UNO (ATmega328p)
+ *
  * main.c
- * Slave
+ * 
+ * Slave device
+ * 
  * Created: 04.04.2021
- * Author : Kariantti 
+ * 
+ * Author : Kariantti Laitala
  */ 
 
 #define F_CPU 16000000UL    // Clock 16MHz
 #define BAUD 9600           // BAUD speed for UART
-#define ACTIVATE 1          // Activate Alarm
-#define DEACTIVATE 2        // Deactivate
-#define ACK 1                // ACK
+// #define ACTIVATE 1          // Activate Alarm
+// #define DEACTIVATE 2        // Deactivate
+// #define ACK 1                // ACK
 
 #include <avr/io.h>
 #include <util/delay.h>
@@ -18,9 +24,20 @@
 #include <stdio.h>
 #include <util/setbaud.h>
 
-bool g_b_alarm_active = false;
-int g_fail_counter = 0;
+// Parameters to handle SPI communication
+//
+#define ACTIVATE 1          // Activate Alarm
+#define DEACTIVATE 2        // Deactivate
+#define ACK 1                // ACK
 
+// Global Variables for SPI communication
+//
+bool g_b_alarm_active = false;  // Global Variable for alarm status
+int g_fail_counter = 0;         // SPI fail counter
+
+
+// This one needs some clean up
+//
 void uart_putchar(char c, FILE *stream);
 char uart_getchar(FILE *stream);
 
@@ -30,6 +47,10 @@ FILE uart_input = FDEV_SETUP_STREAM(NULL, uart_getchar, _FDEV_SETUP_READ);
 
 FILE uart_io = FDEV_SETUP_STREAM(uart_putchar, uart_getchar, _FDEV_SETUP_RW);
 
+/*!
+ * @brief Initialize the PWM for Buzzer sound
+ * TODO: Comments into code
+ */
 void set_timer_01(void)
 {
     TCCR1B = 0; 
@@ -39,6 +60,10 @@ void set_timer_01(void)
 
 }
 
+/*!
+ * @brief Activates the buzzer sound 
+ *
+ */
 void start_alarm_sound(void)
 {
     if(g_b_alarm_active)
@@ -47,11 +72,19 @@ void start_alarm_sound(void)
     }
 }
 
+/*!
+ * @brief Stops the alarm sound if alarm is deactivated
+ *
+ */
 void stop_alarm_sound(void)
 {
     TCCR1B &= ~(1 << CS10);
 }
 
+/*!
+ * @brief Initializes the SPI connection and sets device as Slave
+ *
+ */
 void SPI_init(void)
 {
     // Set MISO output
@@ -61,12 +94,21 @@ void SPI_init(void)
     SPCR |= (1 << SPE) | (1 << SPIE);
 }
 
+/*!
+ * @brief Transmits and receives data over the SPI
+ * @param[in] data Data that is sent over SPI to Master
+ * 
+ */
 void SPI_slave_tx_rx(uint8_t data)
 {
     // Add data to SPI register
     SPDR = data;
 }
 
+/*!
+ * @brief Interrupt Service Routine to receive the data and sets response message to SPDR register
+ *
+ */
 ISR (SPI_STC_vect)
 {
     uint8_t received_data = SPDR;
