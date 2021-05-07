@@ -37,6 +37,12 @@
 #define CHECK 3             // Check data SPI connection
 #define OK 3               // Connection ok
 
+// Parameters for PIN status
+//
+#define OK 1        // PIN correct
+#define CHANGED 2   //PIN changed
+#define NOK 3       // PIN incorrect
+
 // Parameter to define MAX size of PIN code array
 //
 #define MAX_SIZE 4          // Max size of char PIN
@@ -65,7 +71,7 @@ FILE uart_io = FDEV_SETUP_STREAM(uart_putchar, uart_getchar, _FDEV_SETUP_RW);
 void init_timeout_counter();
 void get_pin_code(char * entered_pin_code);
 bool change_pin_code();
-bool show_menu();
+uint8_t show_menu();
 void SPI_init(void);
 void transmit_byte(uint8_t data);
 uint8_t SPI_master_tx_rx(uint8_t data);
@@ -264,22 +270,28 @@ bool change_pin_code()
  * @brief Displays the MENU for the user and user can choise to arm the alarm or change PIN
  * @return Status of PIN change (TODO: Fix this)
  */
-bool show_menu()
+uint8_t show_menu()
 {
-    
-    lcd_clrscr();
-    lcd_puts("MENU");
-    _delay_ms(1500);
-    lcd_clrscr();
-    if(g_b_alarm_active)
-    {
-        return check_pin();
-    }
-    else
-    {
+   bool pin_action = false;
+
+   lcd_clrscr();
+   lcd_puts("MENU");
+   _delay_ms(1500);
+   lcd_clrscr();
+   if(g_b_alarm_active)
+   {
+       pin_action = check_pin();
+       if(pin_action)
+       {
+           return 1;
+       }
+       return 3;
+   }
+   else
+   {
         lcd_puts("1.Activate\n");
         lcd_puts("2.Change PIN");
-    }
+   }
     
     char menu_choice = 0;
     
@@ -290,7 +302,12 @@ bool show_menu()
         switch (menu_choice)
         {
             case '1':
-                return check_pin();
+                pin_action = check_pin();
+                if (pin_action)
+                {
+                    return OK;
+                }
+                else return NOK;
         
             break;
             
@@ -298,12 +315,19 @@ bool show_menu()
                 _delay_ms(200);
                 lcd_clrscr();
                 lcd_puts("Changing PIN\ncode");
-                return change_pin_code();
+                pin_action = change_pin_code();
+
+                if(pin_action)
+                {
+                    return CHANGED;
+                }
+                else return NOK;
             break;
 
             default:
             break;
         }
+        
     } while(menu_choice == 'z');
 
     // Why this is needed?
@@ -578,7 +602,7 @@ int main (void)
 
     while (1)
     {
-        bool pin_status = false;
+        uint8_t pin_status = 0;
         /* code */
         lcd_clrscr();
         
@@ -594,9 +618,9 @@ int main (void)
             // MENU
             pin_status = show_menu();
             lcd_clrscr();
-            lcd_puts("Entered PIN:");
+            lcd_puts("Alarm System");
             lcd_gotoxy(0, 1);
-            if(pin_status)
+            if(pin_status == OK)
             {
                 lcd_puts("PIN CORRECT");
                 if(!g_b_alarm_active)
@@ -606,9 +630,24 @@ int main (void)
                 }
                 else SPI_master_tx_rx(DEACTIVATE);
                 g_b_alarm_active = !g_b_alarm_active;
+                _delay_ms(1500);
             }
-            else lcd_puts("PIN INCORRECT");
-            _delay_ms(2000);
+            else if(pin_status == CHANGED)
+            {
+              
+                lcd_puts("PIN CHANGED");
+                _delay_ms(1500);
+            }
+            else if(pin_status == NOK)
+            {
+                lcd_puts("PIN INCORRECT");
+                _delay_ms(1500);
+            }
+            else
+            {
+                lcd_puts("Unexcpected\nError");
+                _delay_ms(1500);
+            }
         }
         else if(pressed_key == '*')
         {
