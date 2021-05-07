@@ -13,9 +13,6 @@
 
 #define F_CPU 16000000UL    // Clock 16MHz
 #define BAUD 9600           // BAUD speed for UART
-// #define ACTIVATE 1          // Activate Alarm
-// #define DEACTIVATE 2        // Deactivate
-// #define ACK 1                // ACK
 
 #include <avr/io.h>
 #include <util/delay.h>

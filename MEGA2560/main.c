@@ -35,6 +35,7 @@
 #define ACTIVATE 1          // Activate alarm
 #define DEACTIVATE 2        // Deactivate alarm 
 #define CHECK 3             // Check data SPI connection
+#define OK 3               // Connection ok
 
 // Parameter to define MAX size of PIN code array
 //
@@ -94,7 +95,7 @@ bool check_pin(void)
         disable_timer_counter();
     }
     lcd_clrscr();
-    lcd_puts("Enter a PIN code");
+    lcd_puts("PIN + '#'");
     lcd_gotoxy(0,1);
     _delay_ms(500);
 
@@ -203,7 +204,6 @@ void get_pin_code(char * entered_pin_code)
                 _delay_ms(200);  
             }
         }
-        
     }
 
     // Remove # from the end and NULL
@@ -219,7 +219,7 @@ bool change_pin_code()
     char entered_pin_code[5] = {0, 0, 0, 0, 0};
 
     lcd_clrscr();
-    lcd_puts("Enter PIN Code:\n");
+    lcd_puts("Old PIN+'#':\n");
     get_pin_code(entered_pin_code);
 
     bool pin_correct = false;
@@ -230,20 +230,22 @@ bool change_pin_code()
         char new_pin_code_1[5] = {0, 0, 0, 0, 0};
 
         lcd_clrscr();
-        lcd_puts("Enter new PIN:\n");
+        lcd_puts("New PIN+'#':\n");
 
+        // Request new PIN code from user
         get_pin_code(new_pin_code_1);
         _delay_ms(200);
 
         char new_pin_code_2[5] = {0, 0, 0, 0, 0};
 
         lcd_clrscr();
-        lcd_puts("Enter PIN again:\n");
+        lcd_puts("Confirm PIN+'#':\n");
         get_pin_code(new_pin_code_2);
 
+        // Compare that PIN codes match
         if(strcmp(new_pin_code_1, new_pin_code_2) == 0)
         {
-            //strcpy(g_c_pin,new_pin_code_2);
+            // Write new PIN to memory
             write_pin_eeprom(new_pin_code_2);
             lcd_clrscr();
             lcd_puts("PIN CHANGED\n");
@@ -290,22 +292,22 @@ bool show_menu()
             case '1':
                 return check_pin();
         
-                break;
+            break;
+            
             case '2':
                 _delay_ms(200);
-                // return change_pin_code();
-                 lcd_clrscr();
+                lcd_clrscr();
                 lcd_puts("Changing PIN\ncode");
                 return change_pin_code();
-                //_delay_ms(1000);
-                break;
+            break;
+
             default:
-                //show_menu();
-                break;
+            break;
         }
     } while(menu_choice == 'z');
 
-    _delay_ms(5000);
+    // Why this is needed?
+    _delay_ms(2000);
 
     return false;
 }
@@ -379,7 +381,7 @@ uint8_t SPI_master_tx_rx(uint8_t data)
 void SPI_connection_check()
 {
     uint8_t status = SPI_master_tx_rx(CHECK);
-    if (status != 3)
+    if (status != OK)
     {
         g_b_connection_status = false;
     }
@@ -400,8 +402,13 @@ void read_pin_eeprom(void)
             // Wait until previous write done
         }
 
+        // Set index as EEPROM address
         EEAR = address_index;
+
+        // Enable read from EEPROM
         EECR |= (1 << EERE);
+
+        // Read data from EEPROM to global pin variable
         g_c_pin[address_index] = EEDR;
 
     }
@@ -421,7 +428,10 @@ void write_pin_eeprom(char * new_pin_code)
             // Wait until previous write done
         }
 
+        // Set index as EEPROM address 
         EEAR = address_index;
+
+        // Add data to be written to EEPROM data register
         EEDR = new_pin_code[address_index];
 
         // Enable master programming
@@ -451,6 +461,7 @@ void init_timeout_counter(void)
 
     // Enable overflow interrupt
     TIMSK1 = (1 << TOIE1);
+
     // Enable interrupts
     sei();
 
@@ -462,8 +473,14 @@ void init_timeout_counter(void)
  */
 void disable_timer_counter(void)
 {
+
+    // Reset global timeout variable
     g_i_timeout = 0;
+
+    // Reset TCCR1B counter
     TCCR1B = 0;
+
+    // Disable global interrupts
     cli();
 }
 
@@ -473,18 +490,18 @@ void disable_timer_counter(void)
  */
 ISR (PCINT2_vect)
 {
-    // Disable interrupts
-    //DDRK &= ~((1 << PK0) | (1 << PK1) | (1 << PK2) | (1 << PK3));
-    //DDRK = 11110000;
+    // Disable interrupts PCINT2 interrupts
     PCMSK2 &= ~(00000000);
-
     PCIFR &= ~(1 << PCIF2);
+
+    // Disable sleep mode
     SMCR &= ~(1 << SE);
     _delay_ms(50);
 }
 
 /*!
  * @brief Interrupt Service Routine to timeout if no user input received.
+ * It takes two cycles to timeout, i.e. around 8 secods
  *
  */
 ISR (TIMER1_OVF_vect)
@@ -494,7 +511,7 @@ ISR (TIMER1_OVF_vect)
     if(g_i_timeout == 2)
     {
         lcd_clrscr();
-        lcd_puts("Timeout!");
+        lcd_puts("Timeout, no input\nreceived");
         g_b_timeout = true;
         g_i_timeout = 0;
         cli();
@@ -514,18 +531,15 @@ void go_standby_mode(void)
     // Check that there is no unexpected interrupt
     PCIFR |= (1 << PCIF2);
 
+    // Enable Pin Change Interrupt 2
     PCICR |= (1 << PCIE2);
-    // Enable Pin change mask register 2 interrupts
-   // PCMSK2 |= (1 << PCINT23) | (1 << PCINT22) | (1 << PCINT21) | (1 << PCINT20); // | (1 << PCINT19) | (1 << PCINT18) | (1 << PCINT17) | (1 << PCINT16);
-    //PCMSK2 |= (1 << PCINT19) | (1 << PCINT18) | (1 << PCINT17) | (1 << PCINT16);
+
+    // Enable Pin change mask register 2 interrupts for PCINT16 pin
     PCMSK2 |= (1 << PCINT16);
-    //PCMSK2 |= 0xff;
 
-    // Enable the ROWS for interrupt pins
-    // DDRK &= ~((1 << PK0) | (1 << PK1) | (1 << PK2) | (1 << PK3));
-    // PORTA |= (1 << PK0) | (1 << PK1) | (1 << PK2) | (1 << PK3);
-
+    // Enable global interrutps
     sei();
+
     // Enable Sleep mode
     SMCR |= (1 << SM1);
     _delay_ms(100);
@@ -533,6 +547,7 @@ void go_standby_mode(void)
     // Set Sleep enable bit
     SMCR |= (1 << SE);
 
+    // Goto to sleep
     sleep_cpu();
 
 }
