@@ -208,8 +208,14 @@ bool change_pin_code()
 
     lcd_clrscr();
     lcd_puts("Enter PIN+#:\n");
+
+    // Init timeout for user input
+    init_timeout_counter();
     get_pin_code(entered_pin_code);
 
+    // Disable user input and not activate it for new pin
+    disable_timer_counter();
+    
     bool pin_correct = false;
     
     if (strcmp(g_c_pin,entered_pin_code) == 0)
@@ -513,7 +519,7 @@ ISR (TIMER1_OVF_vect)
     if(g_i_timeout == 2)
     {
         lcd_clrscr();
-        lcd_puts("Timeout, no input\nreceived");
+        lcd_puts("Timeout,\ninput too slow");
         g_b_timeout = true;
         g_i_timeout = 0;
         cli();
