@@ -12,13 +12,11 @@
  */ 
 
 #define F_CPU 16000000UL    // 16MHz Clock
-#define BAUD 9600           // BAUD speed for UART
 
 #include <avr/io.h>
 #include <util/delay.h>
 #include <string.h>
 #include <stdbool.h>
-#include <util/setbaud.h>
 #include <stdio.h>
 #include <avr/interrupt.h>
 #include <avr/sleep.h>

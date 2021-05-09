@@ -12,14 +12,12 @@
  */ 
 
 #define F_CPU 16000000UL    // Clock 16MHz
-#define BAUD 9600           // BAUD speed for UART
 
 #include <avr/io.h>
 #include <util/delay.h>
 #include <stdbool.h>
 #include <avr/interrupt.h>
 #include <stdio.h>
-#include <util/setbaud.h>
 
 // Parameters to handle SPI communication
 //
@@ -33,18 +31,6 @@
 //
 bool g_b_alarm_active = false;  // Global Variable for alarm status
 int g_fail_counter = 0;         // SPI fail counter
-
-
-// This one needs some clean up
-//
-void uart_putchar(char c, FILE *stream);
-char uart_getchar(FILE *stream);
-
-void uart_init();
-FILE uart_output = FDEV_SETUP_STREAM(uart_putchar, NULL, _FDEV_SETUP_WRITE);
-FILE uart_input = FDEV_SETUP_STREAM(NULL, uart_getchar, _FDEV_SETUP_READ);
-
-FILE uart_io = FDEV_SETUP_STREAM(uart_putchar, uart_getchar, _FDEV_SETUP_RW);
 
 /*!
  * @brief Initialize the PWM for Buzzer sound
@@ -157,13 +143,8 @@ int main (void)
     // Init PD7 (PIR Sensor) as output
     DDRD &= ~(1 << PD7);
 
-    // Why this??
-  //  DDRB |= (1 << PB5);
-
     // Init PB1 as buzzer
     DDRB |= (1 << PB1);
-
-    //uart_init();
 
 	// Start PWM to make the buzzer sound if alarm activates
     set_timer_01();
@@ -185,39 +166,4 @@ int main (void)
         }
     }
     
-}
-
-
-// UART for Troubleshooting
-
-void
-uart_init()
-{
-    UBRR0H = UBRRH_VALUE;
-    UBRR0L = UBRRL_VALUE;
-
-    
-    UCSR0B = (1 << TXEN0) | (1 << RXEN0);
-
-    UCSR0C = (1 << UCSZ01) | (1 << UCSZ00);
-     
-    stdout = &uart_output;
-    stdin = &uart_input;
-}
-
-void
-uart_putchar(char c, FILE *stream)
-{
-    if(c == '\n'){
-        uart_putchar('\r', stream);
-    }
-    loop_until_bit_is_set(UCSR0A, UDRE0);
-    UDR0 = c;
-}
-
-char
-uart_getchar(FILE *stream)
-{
-    loop_until_bit_is_set(UCSR0A, RXC0);
-    return UDR0;
 }
