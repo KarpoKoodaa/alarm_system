@@ -89,7 +89,7 @@ bool check_pin(void)
         disable_timer_counter();
     }
     lcd_clrscr();
-    lcd_puts("PIN + '#'");
+    lcd_puts("Enter PIN+#:\n");
     lcd_gotoxy(0,1);
     _delay_ms(500);
 
@@ -207,7 +207,7 @@ bool change_pin_code()
     char entered_pin_code[5] = {0, 0, 0, 0, 0};
 
     lcd_clrscr();
-    lcd_puts("Old PIN+'#':\n");
+    lcd_puts("Enter PIN+#:\n");
     get_pin_code(entered_pin_code);
 
     bool pin_correct = false;
@@ -218,7 +218,7 @@ bool change_pin_code()
         char new_pin_code_1[5] = {0, 0, 0, 0, 0};
 
         lcd_clrscr();
-        lcd_puts("New PIN+'#':\n");
+        lcd_puts("New PIN+#:\n");
 
         // Request new PIN code from user
         get_pin_code(new_pin_code_1);
@@ -227,7 +227,7 @@ bool change_pin_code()
         char new_pin_code_2[5] = {0, 0, 0, 0, 0};
 
         lcd_clrscr();
-        lcd_puts("Confirm PIN+'#':\n");
+        lcd_puts("Again new PIN+#:\n");
         get_pin_code(new_pin_code_2);
 
         // Compare that PIN codes match
