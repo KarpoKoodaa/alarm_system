@@ -34,13 +34,18 @@ int g_fail_counter = 0;         // SPI fail counter
 
 /*!
  * @brief Initialize the PWM for Buzzer sound
- * TODO: Comments into code
+ * 
  */
 void set_timer_01(void)
 {
-    TCCR1B = 0; 
-    TCNT1 = 0;
-    TCCR1A |= (1 << 6);
+    // Set up 16-bit timer
+    TCCR1B = 0;     
+    TCNT1 = 0; 
+
+    // Set compare mode to toggle     
+    TCCR1A |= (1 << 6); 
+
+    // 523Hz sound without prescaler (Sound can be higher, but testing purpose keeped low)
     OCR1A = 15300;
 
 }
