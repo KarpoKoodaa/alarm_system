@@ -26,7 +26,7 @@
 #include "lib/LCD/lcd.h"
 #include "lib/Keypad/keypad.h"
 
-// Parameters to handle SPI communcations
+// Parameters to handle SPI communications
 //
 #define ACTIVATE 5          // Activate alarm
 #define DEACTIVATE 2        // Deactivate alarm 

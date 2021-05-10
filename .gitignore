@@ -16,4 +16,7 @@ MEGA2560/lib/Keypad/keypad.o
 
 # Other files
 *.docx
+*.HEIC
+*.MOV
+*.png
 
